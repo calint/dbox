@@ -658,6 +658,9 @@ namespace dbox{
 			case 6:
 				glDrawArrays(GL_LINES,0,nvertices());
 				break;
+			case 7:
+				glDrawArrays(GL_LINE_LOOP,0,nvertices());
+				break;
 			default:throw signl(0,"unknown elemtype");
 			}
 		}
@@ -702,6 +705,29 @@ namespace dbox{
 	};
 	vboaxis vboaxis::inst;
 
+	class vbocirclexy:public vbo{
+	public:
+		inline int elemtype()const{return 7;}
+		inline int nvertices()const{return 32;}
+		inline GLsizei nindices(){return 0;}
+//		inline GLsizei nindices()const{return 0;}
+		void vertices(float fa[])const{
+			const float da=2*pi/nvertices();
+			int j=0;
+			float a=0;
+			for(int i=0;i<nvertices();i++,a+=da){
+				const float c=cosf(a);
+				const float s=sinf(a);
+				fa[j++]=c;fa[j++]=s;fa[j++]=0;//xyz
+				fa[j++]=1;fa[j++]=1;fa[j++]=1;fa[j++]=1;//rgba
+				fa[j++]=c;fa[j++]=s;//st
+			}
+		}
+
+	public:
+		static vbocirclexy inst;
+	};
+	vbocirclexy vbocirclexy::inst;
 
 	class glob:public pt{
 		const int id;
@@ -857,7 +883,7 @@ namespace dbox{
 			nd.set(d);
 		}
 		virtual void gldraw(){
-			if(vb||drawaxis){
+			if(vb||drawaxis||drawboundingspheres){
 				GLfloat mx[16];
 				getmxmw().togl(mx);
 				glUniformMatrix4fv(shader::umxmw,1,false,mx);
@@ -866,6 +892,8 @@ namespace dbox{
 				vb->gldraw();
 			if(drawaxis)
 				vboaxis::inst.gldraw();
+			if(drawboundingspheres)
+				vbocirclexy::inst.gldraw();
 			for(auto g:chs)g->gldraw();
 		};
 		inline pt&agl(){return a;}//?
@@ -889,14 +917,6 @@ namespace dbox{
 		inline glob&setcoldetrec(const bool b){if(b)bits|=4;else bits&=0xfffffffb;return*this;}
 		inline bool isitem()const{return bits&8;}
 		inline glob&setcolmx(const bool b){if(b)bits|=16;else bits&=0xfffffff0;return*this;}
-		void drawboundingsphere(){
-	//		const GLbyte i=127;
-	//		glColor3b(i,i,i);
-	//		int detail=(int)(.4f*radius()*drawboundingspheresdetail);
-	//		if(detail<drawboundingspheresdetail)
-	//			detail=drawboundingspheresdetail;
-			//glutSolidSphere(radius(),detail,detail);
-		}
 		//? static
 		bool solvesecdegeq(const float a,const float b,const float c,float&t1,float&t2)const{
 			const float pt2=2*a;
@@ -1798,6 +1818,8 @@ namespace dbox{
 		printf(": %8s : %-4lu :\n","bvol",sizeof(bvol));
 		printf(": %8s : %-4lu :\n","glob",sizeof(glob));
 
+		vboaxis::inst.glload();
+		vbocirclexy::inst.glload();
 	}
 
 	void run(){
@@ -1906,7 +1928,6 @@ namespace app{
 		vbo vb;
 		vb.glload();
 		app::vbodots::inst.glload();
-		vboaxis::inst.glload();
 
 
 		app::objaxis*o=new app::objaxis();
