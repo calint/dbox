@@ -1493,7 +1493,6 @@ namespace dbox{
 		GLsizei shadowmapsize;
 		float firereload;
 		tmr drawtmr;
-		bool drawgrid;
 	public:
 		windo(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=.1f,const int width=1024,const int height=512,const float zoom=1.5):
 			vehicle(g,p,a,r,.25f),
@@ -1511,8 +1510,7 @@ namespace dbox{
 			hiprv(hi),
 			gltexshadowmap(0),
 			shadowmapsize(512),
-			firereload(0),
-			drawgrid(true)
+			firereload(0)
 		{}
 		void resize(const int width,const int height){
 //			cout<<"reshape "<<width<<" x "<<height;
@@ -1530,7 +1528,7 @@ namespace dbox{
 			const bvol bv(0,0);
 //			wd.culldraw(bv);
 			wd.grd.culldraw(bv);
-			if(drawgrid)
+			if(wd.drawgrid)
 				wd.grd.gldraw();
 		}
 	//	void drawframe(){
@@ -1696,6 +1694,7 @@ namespace dbox{
 	//		if(hdlkeytg('5')){wold::get().coldetgrid=!wold::get().coldetgrid;}
 			if(hdlkeytg('5')){drawshadows=!drawshadows;}
 			if(hdlkeytg('6')){viewpointlht=!viewpointlht;}
+			if(hdlkeytg('7')){glob::drawaxis=!glob::drawaxis;}
 			if(hdlkeydn(' ')){fire();}
 			if(hdlkeytg(9)){togglehud();}// tab
 			if(hdlkeytg('y')){zoom-=.1;}
