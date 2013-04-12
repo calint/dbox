@@ -663,6 +663,46 @@ namespace dbox{
 		}
 	};
 
+	class vboaxis:public vbo{
+	public:
+		inline int elemtype()const{return 6;}
+		inline int nvertices()const{return 6;}
+		inline GLsizei nindices(){return 0;}
+//		inline GLsizei nindices()const{return 0;}
+		void vertices(float fa[])const{
+			int j=0;
+			fa[j++]=0;fa[j++]=0;fa[j++]=0;//xyz
+			fa[j++]=0;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
+			fa[j++]=0;fa[j++]=0;//st
+
+			fa[j++]=1;fa[j++]=0;fa[j++]=0;//xyz
+			fa[j++]=1;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
+			fa[j++]=1;fa[j++]=0;//st
+
+			fa[j++]=0;fa[j++]=0;fa[j++]=0;//xyz
+			fa[j++]=0;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
+			fa[j++]=0;fa[j++]=0;//st
+
+			fa[j++]=0;fa[j++]=1;fa[j++]=0;//xyz
+			fa[j++]=0;fa[j++]=1;fa[j++]=0;fa[j++]=1;//rgba
+			fa[j++]=0;fa[j++]=1;//st
+
+			fa[j++]=0;fa[j++]=0;fa[j++]=0;//xyz
+			fa[j++]=0;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
+			fa[j++]=0;fa[j++]=0;//st
+
+			fa[j++]=0;fa[j++]=0;fa[j++]=1;//xyz
+			fa[j++]=0;fa[j++]=0;fa[j++]=1;fa[j++]=1;//rgba
+			fa[j++]=0;fa[j++]=0;//st
+
+		}
+
+	public:
+		static vboaxis inst;
+	};
+	vboaxis vboaxis::inst;
+
+
 	class glob:public pt{
 		const int id;
 		glob&g;
@@ -701,6 +741,7 @@ namespace dbox{
 		pt nd;
 		static bool drawboundingspheres;
 		static int drawboundingspheresdetail;
+		static bool drawaxis;
 
 		inline glob&pos(const pt&coord,const pt&agl){np.set(coord);a.set(agl);return*this;}
 		inline glob&setvbo(vbo&v){vb=&v;return*this;}
@@ -777,7 +818,7 @@ namespace dbox{
 				return;
 			}
 			metrics::globsrend++;
-			if(drawboundingspheres)drawboundingsphere();
+//			if(drawboundingspheres)drawboundingsphere();
 			gldraw();
 			for(auto g:chs)
 				g->culldraw(bv);
@@ -816,12 +857,15 @@ namespace dbox{
 			nd.set(d);
 		}
 		virtual void gldraw(){
-			if(vb){
+			if(vb||drawaxis){
 				GLfloat mx[16];
 				getmxmw().togl(mx);
 				glUniformMatrix4fv(shader::umxmw,1,false,mx);
-				vb->gldraw();
 			}
+			if(vb)
+				vb->gldraw();
+			if(drawaxis)
+				vboaxis::inst.gldraw();
 			for(auto g:chs)g->gldraw();
 		};
 		inline pt&agl(){return a;}//?
@@ -950,6 +994,7 @@ namespace dbox{
 	};
 	bool glob::drawboundingspheres=true;
 	int glob::drawboundingspheresdetail=6;
+	bool glob::drawaxis=true;
 
 	class grid{
 		pt po;
@@ -1827,41 +1872,6 @@ namespace app{
 	};
 	vbodots vbodots::inst;
 
-	class vboaxis:public vbo{
-		inline int elemtype()const{return 6;}
-		inline int nvertices()const{return 6;}
-		virtual void vertices(float fa[])const{
-			int j=0;
-			fa[j++]=0;fa[j++]=0;fa[j++]=0;//xyz
-			fa[j++]=0;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
-			fa[j++]=0;fa[j++]=0;//st
-
-			fa[j++]=1;fa[j++]=0;fa[j++]=0;//xyz
-			fa[j++]=1;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
-			fa[j++]=1;fa[j++]=0;//st
-
-			fa[j++]=0;fa[j++]=0;fa[j++]=0;//xyz
-			fa[j++]=0;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
-			fa[j++]=0;fa[j++]=0;//st
-
-			fa[j++]=0;fa[j++]=1;fa[j++]=0;//xyz
-			fa[j++]=0;fa[j++]=1;fa[j++]=0;fa[j++]=1;//rgba
-			fa[j++]=0;fa[j++]=1;//st
-
-			fa[j++]=0;fa[j++]=0;fa[j++]=0;//xyz
-			fa[j++]=0;fa[j++]=0;fa[j++]=0;fa[j++]=1;//rgba
-			fa[j++]=0;fa[j++]=0;//st
-
-			fa[j++]=0;fa[j++]=0;fa[j++]=1;//xyz
-			fa[j++]=0;fa[j++]=0;fa[j++]=1;fa[j++]=1;//rgba
-			fa[j++]=0;fa[j++]=0;//st
-
-		}
-	public:
-		static vboaxis inst;
-	};
-	vboaxis vboaxis::inst;
-
 	class objdots:public glob{
 	public:
 		objdots(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=.5f,vbo&vb=vbodots::inst):
@@ -1874,7 +1884,7 @@ namespace app{
 
 	class objaxis:public glob{
 	public:
-		objaxis(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=.5f,vbo&vb=vboaxis::inst):
+		objaxis(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=.5f,vbo&vb=*(vbo*)0):
 			glob(g,p,a,r,density_gcm3,bounciness,vb)
 		{
 			bits|=1;
@@ -1896,7 +1906,7 @@ namespace app{
 		vbo vb;
 		vb.glload();
 		app::vbodots::inst.glload();
-		app::vboaxis::inst.glload();
+		vboaxis::inst.glload();
 
 
 		app::objaxis*o=new app::objaxis();
@@ -1914,7 +1924,10 @@ namespace app{
 //		for(int i=0;i<n;i++){
 //			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.01f,1,0,vb);
 //		}
-
+		const int n=8;
+		for(int i=0;i<n;i++){
+			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.1f,1,0,vb);
+		}
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
 		wn->dpos(pt(0,0,-.1f),pt());
