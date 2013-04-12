@@ -23,7 +23,13 @@
 							<builder buildPath="${workspace_loc:/dbox}/Debug" id="cdt.managedbuild.target.gnu.builder.macosx.exe.debug.1051843051" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.macosx.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.debug.745830103" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.debug"/>
 							<tool command="clang++" id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.exe.debug.721364554" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.exe.debug">
-								<option id="macosx.cpp.link.option.flags.424820733" name="Linker flags" superClass="macosx.cpp.link.option.flags" value="-framework OpenGL -framework cocoa -framework iokit ../glfw/lib/osx/libglfw.a" valueType="string"/>
+								<option id="macosx.cpp.link.option.flags.424820733" name="Linker flags" superClass="macosx.cpp.link.option.flags" value="-framework OpenGL -framework cocoa -framework iokit ../glfw/lib/osx/libglfw.a  -lpng " valueType="string"/>
+								<option id="macosx.cpp.link.option.libs.284660374" name="Libraries (-l)" superClass="macosx.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="png"/>
+								</option>
+								<option id="macosx.cpp.link.option.paths.762684745" name="Library search path (-L)" superClass="macosx.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/usr/X11/lib/"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.608162993" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -42,6 +48,9 @@
 								<option id="gnu.cpp.compiler.option.warnings.toerrors.1666038284" name="Warnings as errors (-Werror)" superClass="gnu.cpp.compiler.option.warnings.toerrors" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.compiler.option.warnings.wconversion.1140572779" name="Implicit conversion warnings (-Wconversion)" superClass="gnu.cpp.compiler.option.warnings.wconversion" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.compiler.option.other.other.966186159" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=gnu++11 -Wfatal-errors" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.include.paths.227354864" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/X11/include/"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.775826512" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug.836912860" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug">

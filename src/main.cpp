@@ -13,6 +13,7 @@
 #define GLFW_INCLUDE_GL3
 #define GLFW_NO_GLU
 #include "../glfw/glfw.h"
+#include <png.h>
 using namespace std;
 namespace dbox{
 	#define flf()l("···",__FILE__,__LINE__,__FUNCTION__);
@@ -123,7 +124,7 @@ namespace dbox{
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D utex;uniform sampler2D ushad;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?-.2:0.;gl_FragColor=la*vec4(1,1,1,1)+tex+gl_Color;}"};
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D ushad;uniform sampler2D utex;varying vec3 vnml;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?.5:1.;vec3 lht=vec3(1,0,0);float ln=dot(normalize(vnml),lht);gl_FragColor=la*(tex+ln+gl_Color);}"};
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D ushad;uniform sampler2D utex;varying vec3 vnml;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?.5:1.;vec3 lht=vec3(1,0,0);float ln=dot(normalize(vnml),lht);float wa=gl_FragCoord.w;gl_FragColor=la*(ln*.2+wa*.5+tex+gl_Color);}"};
-			const GLchar*frgshdrsrc[]={"#version 150 core\nuniform sampler2D utx;in vec4 rgba;in vec2 txcoord;out vec4 out_Color;void main(){out_Color=rgba+(1-gl_FragCoord.z);}"};
+			const GLchar*frgshdrsrc[]={"#version 150 core\nuniform sampler2D utx;in vec4 rgba;in vec2 txcoord;out vec4 out_Color;void main(){vec4 txrgba=texture(utx,txcoord);out_Color=txrgba;/*+vec4(txcoord,1,1);*//*rgba+txrgba;*//*+rgba+(1-gl_FragCoord.z);*/}"};
 			const GLint frgshdrsrclen[]={GLint(strlen(frgshdrsrc[0]))};
 			glShaderSource(frgshdr,1,frgshdrsrc,frgshdrsrclen);
 			glCompileShader(frgshdr);
@@ -147,7 +148,7 @@ namespace dbox{
 			if((umxwv=glGetUniformLocation(prog,"umxwv"))==-1)throw signl(0,"umxwv not found");
 			if((udopersp=glGetUniformLocation(prog,"udopersp"))==-1)throw signl(0,"udopersp not found");
 //			if((urendzbuf=glGetUniformLocation(prog,"urendzbuf"))==-1)throw signl(0,"urendzbuf not found");
-//			if((utx=glGetUniformLocation(prog,"utx"))==-1)throw signl(0,"utx not found");
+			if((utx=glGetUniformLocation(prog,"utx"))==-1)throw signl(0,"utx not found");
 			glUseProgram(prog);
 
 			if(glGetError())throw signl(0,"shader::init");
@@ -621,10 +622,15 @@ namespace dbox{
 			glEnableVertexAttribArray(0);
 			glEnableVertexAttribArray(1);
 	//		if(tx!=null){
-	//			glBindTexture(GL_TEXTURE_2D,tx.id);
-	//			glEnableVertexAttribArray(2);
-	//			glUniform1i(shader.utx,0);
+//				glBindTexture(GL_TEXTURE_2D,tx.id);
+//				glEnableVertexAttribArray(2);
 	//		}
+				glEnableVertexAttribArray(2);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D,1);
+				glUniform1i(shader::utx,2);
+
+
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glvib);//? only for elem ops
 			switch(elemtype()){
 			case 0:
@@ -1899,7 +1905,102 @@ namespace dbox{
 	};
 
 //#include<png.h>
+	bool loadPngImage(char *name, int &outWidth, int &outHeight, bool &outHasAlpha,int&bit_depth,GLubyte **outData) {
+	    png_structp png_ptr;
+	    png_infop info_ptr;
+	    unsigned int sig_read = 0;
+	    int color_type, interlace_type;
+	    FILE *fp;
+	    outHasAlpha=false;
 
+	    if ((fp = fopen(name, "rb")) == NULL)
+	        return false;
+	    png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL, NULL, NULL);
+	    if (png_ptr==NULL){
+	        fclose(fp);
+	        return false;
+	    }
+	    info_ptr=png_create_info_struct(png_ptr);
+	    if(info_ptr==NULL){
+	        fclose(fp);
+	        png_destroy_read_struct(&png_ptr,NULL,NULL);
+	        return false;
+	    }
+
+	    /* Set error handling if you are
+	     * using the setjmp/longjmp method
+	     * (this is the normal method of
+	     * doing things with libpng).
+	     * REQUIRED unless you  set up
+	     * your own error handlers in
+	     * the png_create_read_struct()
+	     * earlier.
+	     */
+	    if (setjmp(png_jmpbuf(png_ptr))) {
+	        /* Free all of the memory associated
+	         * with the png_ptr and info_ptr */
+	        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+	        fclose(fp);
+	        /* If we get here, we had a
+	         * problem reading the file */
+	        return false;
+	    }
+
+	    /* Set up the output control if
+	     * you are using standard C streams */
+	    png_init_io(png_ptr,fp);
+
+	    /* If we have already
+	     * read some of the signature */
+	    png_set_sig_bytes(png_ptr,(int)sig_read);
+
+	    /*
+	     * If you have enough memory to read
+	     * in the entire image at once, and
+	     * you need to specify only
+	     * transforms that can be controlled
+	     * with one of the PNG_TRANSFORM_*
+	     * bits (this presently excludes
+	     * dithering, filling, setting
+	     * background, and doing gamma
+	     * adjustment), then you can read the
+	     * entire image (including pixels)
+	     * into the info structure with this
+	     * call
+	     *
+	     * PNG_TRANSFORM_STRIP_16 |
+	     * PNG_TRANSFORM_PACKING  forces 8 bit
+	     * PNG_TRANSFORM_EXPAND forces to
+	     *  expand a palette into RGB
+	     */
+	    png_read_png(png_ptr,info_ptr,PNG_TRANSFORM_STRIP_16|PNG_TRANSFORM_PACKING|PNG_TRANSFORM_EXPAND,NULL);
+	    png_uint_32 width,height;
+	    png_get_IHDR(png_ptr,info_ptr,&width,&height,&bit_depth,&color_type,&interlace_type,NULL,NULL);
+	    outWidth = (int)width;
+	    outHeight =(int)height;
+
+	    size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+	    *outData = (unsigned char*) malloc(row_bytes * (size_t)outHeight);
+
+	    png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
+
+	    for (int i = 0; i < outHeight; i++) {
+	        // note that png is ordered top to
+	        // bottom, but OpenGL expect it bottom to top
+	        // so the order or swapped
+	        memcpy(*outData+((int)row_bytes * (outHeight-1-i)), row_pointers[i], row_bytes);
+	    }
+
+	    /* Clean up after the read,
+	     * and free any memory allocated */
+	    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+
+	    /* Close the file */
+	    fclose(fp);
+
+	    /* That's it */
+	    return true;
+	}
 }
 #endif
 
@@ -1966,7 +2067,6 @@ namespace app{
 		}
 		app::vbodots::inst.glload();
 
-
 		app::objaxis*o=new app::objaxis();
 //		o->radius(1);
 //		o->setscl(pt(.1f,.1f,.1f));
@@ -1983,16 +2083,60 @@ namespace app{
 //		for(int i=0;i<n;i++){
 //			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.01f,1,0,vb);
 //		}
-		const int n=512;
-		const float r=.01f;
-		for(int i=0;i<n;i++){
-			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbo::inst);
-			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
-		}
+//		const int n=512;
+//		const float r=.01f;
+//		for(int i=0;i<n;i++){
+//			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbo::inst);
+//			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
+//		}
+		new glob(wd,pt(),pt(),1,1,0,vbo::inst);
 
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
 		wn->dpos(pt(0,0,-.01f),pt());
+
+
+
+		if(glGetError()!=GL_NO_ERROR)throw signl(2,"1opengl is in error state");
+		GLubyte *textureImage;
+	    int width, height;
+	    bool hasAlpha;
+	    int bitdepth;
+	    char filename[] = "sprite1.png";
+	    bool success = loadPngImage(filename, width, height, hasAlpha, bitdepth,&textureImage);
+	    if (!success) {
+	        std::cout << "Unable to load png file" << std::endl;
+	        return;
+	    }
+	    cout<<"loading textures"<<endl;
+	    cout<<"  "<<filename<<" "<<width<<" x "<<height<<endl;
+
+		{
+			width=128;height=128;
+			int n=4*width*height;
+			textureImage=new GLubyte[n];
+			GLubyte*ptr=textureImage;
+			while(n){
+				ptr[0]=(GLubyte)rnd(0,256);
+				ptr[1]=(GLubyte)rnd(0,256);
+				ptr[2]=(GLubyte)rnd(0,256);
+				ptr[3]=255;
+				ptr+=4;
+				n-=4;
+			}
+		}
+		GLuint tx;glGenTextures(1,&tx);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D,tx);
+	    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,textureImage);
+	    glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+		glBindTexture(GL_TEXTURE_2D,0);
+		if(glGetError()!=GL_NO_ERROR)throw signl(2,"opengl is in error state");
 
 		dbox::run();
 	}
