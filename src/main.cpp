@@ -1727,7 +1727,11 @@ namespace dbox{
 	//		}
 		}
 		void fire(){
-			nd.set(getmxv().zaxis().neg().scale(dt()));
+			const float r=.01f;
+			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbocirclexy::inst);
+			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
+
+//			nd.set(getmxv().zaxis().neg().scale(dt()));
 	////		firereload+=dt(60);if(firereload>1)firereload=1;
 	////		if(firereload<1)return;
 	////		firereload-=1;
