@@ -521,6 +521,7 @@ namespace dbox{
 	public:
 		vbo():glva(0),glvib(0),glvb(0),nind(0){}
 		virtual~vbo(){}
+		virtual inline const char*name()const{return "vbo";}
 		virtual inline int nvertices()const{return 4;}
 		virtual inline int elemtype()const{return 0;}
 		virtual void vertices(float fa[])const{
@@ -556,6 +557,7 @@ namespace dbox{
 			const int stridebytes=stride*sizeofnum;
 
 			const int nv=nvertices();
+			cout<<name()<<endl;
 			cout<<"  "<<nv<<" vertices, "<<stridebytes<<" B/vertex"<<endl;
 			float*vb=new float[nv*stride];
 			vertices(vb);
@@ -623,7 +625,7 @@ namespace dbox{
 	//			glEnableVertexAttribArray(2);
 	//			glUniform1i(shader.utx,0);
 	//		}
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glvib);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glvib);//? only for elem ops
 			switch(elemtype()){
 			case 0:
 				glDrawElements(GL_TRIANGLES,nind,GL_UNSIGNED_BYTE,0);
@@ -664,10 +666,13 @@ namespace dbox{
 			default:throw signl(0,"unknown elemtype");
 			}
 		}
+		static vbo inst;
 	};
+	vbo vbo::inst;
 
 	class vboaxis:public vbo{
 	public:
+		inline const char*name()const{return "vboaxis";}
 		inline int elemtype()const{return 6;}
 		inline int nvertices()const{return 6;}
 		inline GLsizei nindices(){return 0;}
@@ -697,16 +702,14 @@ namespace dbox{
 			fa[j++]=0;fa[j++]=0;fa[j++]=1;//xyz
 			fa[j++]=0;fa[j++]=0;fa[j++]=1;fa[j++]=1;//rgba
 			fa[j++]=0;fa[j++]=0;//st
-
 		}
-
-	public:
 		static vboaxis inst;
 	};
 	vboaxis vboaxis::inst;
 
 	class vbocirclexy:public vbo{
 	public:
+		inline const char*name()const{return "vbocirclexy";}
 		inline int elemtype()const{return 7;}
 		inline int nvertices()const{return 32;}
 		inline GLsizei nindices(){return 0;}
@@ -723,14 +726,13 @@ namespace dbox{
 				fa[j++]=c;fa[j++]=s;//st
 			}
 		}
-
-	public:
 		static vbocirclexy inst;
 	};
 	vbocirclexy vbocirclexy::inst;
 
 	class vbosquarexy:public vbo{
 	public:
+		inline const char*name()const{return "vbosquarexy";}
 		inline int elemtype()const{return 7;}
 		static vbosquarexy inst;
 	};
@@ -1850,6 +1852,7 @@ namespace dbox{
 		printf(": %8s : %-4lu :\n","bvol",sizeof(bvol));
 		printf(": %8s : %-4lu :\n","glob",sizeof(glob));
 
+		vbo::inst.glload();
 		vboaxis::inst.glload();
 		vbocirclexy::inst.glload();
 		vbosquarexy::inst.glload();
@@ -1904,8 +1907,10 @@ namespace dbox{
 using namespace dbox;
 namespace app{
 	class vbodots:public vbo{
+		inline const char*name()const{return "vbodots";}
 		inline int elemtype()const{return 5;}
 		inline int nvertices()const{return 1024*1024;}
+		virtual GLsizei nindices(){return 0;}
 		virtual void vertices(float fa[])const{
 			const int n=nvertices();
 			int j=0;
@@ -1959,8 +1964,6 @@ namespace app{
 			}
 			dbox::net::init();
 		}
-		vbo vb;
-		vb.glload();
 		app::vbodots::inst.glload();
 
 
@@ -1983,7 +1986,7 @@ namespace app{
 		const int n=512;
 		const float r=.01f;
 		for(int i=0;i<n;i++){
-			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vb);
+			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbo::inst);
 			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
 		}
 
