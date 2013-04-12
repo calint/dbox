@@ -729,6 +729,13 @@ namespace dbox{
 	};
 	vbocirclexy vbocirclexy::inst;
 
+	class vbosquarexy:public vbo{
+	public:
+		inline int elemtype()const{return 7;}
+		static vbosquarexy inst;
+	};
+	vbosquarexy vbosquarexy::inst;
+
 	class glob:public pt{
 		const int id;
 		glob&g;
@@ -1033,7 +1040,7 @@ namespace dbox{
 		const size_t splitthresh=100;
 		const int subgridlevels=4;
 	public:
-		grid(const float size,const pt&p=pt(0,0,-.5f)):
+		grid(const float size,const pt&p=pt(0,0,-.5f))://displaced to optimize z=0
 			po(p),s(size)
 //			,grds({0,0,0,0,0,0,0,0})
 		{
@@ -1052,6 +1059,12 @@ namespace dbox{
 						gr->tick();
 		}
 		void gldraw(){
+			GLfloat mx[16];
+			mtx mw;
+			mw.setsclagltrans(pt(s,s,s),pt(),po);
+			mw.togl(mx);
+			glUniformMatrix4fv(shader::umxmw,1,false,mx);
+			vbosquarexy::inst.gldraw();
 			//? sphere in viewpyr check
 	//		const GLbyte c=(GLbyte)(po.gety()/15*127);
 	//		glColor3b(0,0,c);
@@ -1480,6 +1493,7 @@ namespace dbox{
 		GLsizei shadowmapsize;
 		float firereload;
 		tmr drawtmr;
+		bool drawgrid;
 	public:
 		windo(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=.1f,const int width=1024,const int height=512,const float zoom=1.5):
 			vehicle(g,p,a,r,.25f),
@@ -1497,7 +1511,8 @@ namespace dbox{
 			hiprv(hi),
 			gltexshadowmap(0),
 			shadowmapsize(512),
-			firereload(0)
+			firereload(0),
+			drawgrid(true)
 		{}
 		void resize(const int width,const int height){
 //			cout<<"reshape "<<width<<" x "<<height;
@@ -1515,6 +1530,8 @@ namespace dbox{
 			const bvol bv(0,0);
 //			wd.culldraw(bv);
 			wd.grd.culldraw(bv);
+			if(drawgrid)
+				wd.grd.gldraw();
 		}
 	//	void drawframe(){
 	//		const float freq=drawtmr.dt();
@@ -1828,13 +1845,13 @@ namespace dbox{
 
 		vboaxis::inst.glload();
 		vbocirclexy::inst.glload();
+		vbosquarexy::inst.glload();
 	}
 
 	void run(){
 		long long frm=0;
 		tmr t,t1,t2;
-	//	printf(": %5lu : %5f : %5f : %5d : %5d :\n",frm,t.dt(),dt(),metrics::globs,metrics::globsrend);
-		printf(": %5s : %8s : %8s :  %8s :  %8s :  %8s :  %8s :  %8s : %5s : %5s : %5s : %5s : %5s : %5s : %5s :\n","frame","dt","dt","draw","tick","swpbuf","grdput","coldet","globs","grend","mmul","grds","grdcl","cdet","cols");
+		printf(": %5s : %5s : %5s : %4s : %5s : %5s : %5s : %5s : %5s : %8s : %8s : %8s : %8s : %8s : %8s :\n","frame","globs","rend","fps","grids","cull","chk","cols","mxmul","dtdrw","dttck","dtswp","dt","dtgrdpt","dtcoldet");
 	//	cout<<"frame"<<" "<<"dt      "<<" "<<"dt     "<<" "<<"globs"<<" "<<"globsrend"<<"\n";
 		while(glfwGetWindowParam(GLFW_OPENED)){
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error");
@@ -1844,15 +1861,17 @@ namespace dbox{
 			if(wn)
 				wn->drawframe();
 			const float drawframedt=t3.dt();
-			clk::dt=t2.dt();
 			wd.dotck();
 			if(wn)
 				wn->handlekeys();
-			const float tickdt=t2.dt();
+			const float tickdt=t3.dt();
 			if(wn)
 				glfwSwapBuffers();
-			const float swapbufsdt=t2.dt();
-			printf(": %5lld : %8f : %8f :  %8f :  %8f :  %8f :  %8f :  %8f : %5d : %5d : %5d : %5d : %5d : %5d : %5d :\r",frm,t.dt(),dt(),drawframedt,tickdt,swapbufsdt,metrics::dtgrdput,metrics::dtcoldetgrd,metrics::globs,metrics::globsrend,metrics::mmmul,metrics::ngrids,metrics::gridsculled,metrics::coldetsph,metrics::collisions);
+			const float swapbufsdt=t3.dt();
+			clk::dt=t.dt();
+			clk::fps=(int)(1/clk::dt);
+			printf(": %5lld : %5d : %5d : %4d : %5d : %5d : %5d : %5d : %5d : %8f : %8f : %8f : %8f : %8f : %8f :\r",frm,metrics::globs,metrics::globsrend,clk::fps,metrics::ngrids,metrics::gridsculled,metrics::coldetsph,metrics::collisions,metrics::mmmul,
+					drawframedt,tickdt,swapbufsdt,clk::dt,metrics::dtgrdput,metrics::dtcoldetgrd);
 			metrics::globsrend=metrics::mmmul=metrics::gridsculled=metrics::coldetsph=metrics::collisions=0;
 		}
 		cout<<endl<<frm/t1.dt()<<endl;
@@ -1954,14 +1973,16 @@ namespace app{
 //		for(int i=0;i<n;i++){
 //			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.01f,1,0,vb);
 //		}
-		const int n=128;
+		const int n=512;
+		const float r=.01f;
 		for(int i=0;i<n;i++){
-			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.1f,1,0,vb);
+			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vb);
+			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
 		}
 
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
-		wn->dpos(pt(0,0,-.1f),pt());
+		wn->dpos(pt(0,0,-.01f),pt());
 
 		dbox::run();
 	}
