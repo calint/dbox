@@ -883,7 +883,7 @@ namespace dbox{
 			nd.set(d);
 		}
 		virtual void gldraw(){
-			if(vb||drawaxis||drawboundingspheres){
+			if(vb||drawaxis){
 				GLfloat mx[16];
 				getmxmw().togl(mx);
 				glUniformMatrix4fv(shader::umxmw,1,false,mx);
@@ -892,8 +892,16 @@ namespace dbox{
 				vb->gldraw();
 			if(drawaxis)
 				vboaxis::inst.gldraw();
-			if(drawboundingspheres)
+			if(drawboundingspheres){
+				const pt pos=posinwcs(pt());
+//				flf();l()<<pos<<"   "<<r<<endl;
+				GLfloat mx[16];
+				mtx mw;
+				mw.setsclagltrans(pt(r,r,r),pt(),pos);
+				mw.togl(mx);
+				glUniformMatrix4fv(shader::umxmw,1,false,mx);
 				vbocirclexy::inst.gldraw();
+			}
 			for(auto g:chs)g->gldraw();
 		};
 		inline pt&agl(){return a;}//?
@@ -1931,7 +1939,8 @@ namespace app{
 
 
 		app::objaxis*o=new app::objaxis();
-		o->setscl(pt(.5f,.5f,.5f));
+//		o->radius(1);
+//		o->setscl(pt(.1f,.1f,.1f));
 		o->dpos(pt(),pt(0,0,180));
 
 
@@ -1945,10 +1954,11 @@ namespace app{
 //		for(int i=0;i<n;i++){
 //			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.01f,1,0,vb);
 //		}
-		const int n=8;
+		const int n=128;
 		for(int i=0;i<n;i++){
 			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.1f,1,0,vb);
 		}
+
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
 		wn->dpos(pt(0,0,-.1f),pt());
