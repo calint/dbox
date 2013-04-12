@@ -771,9 +771,9 @@ namespace dbox{
 		inline const list<glob*>getchs()const{return chs;}
 		vbo*vb;
 		pt scl;
-	public:
 		pt np;
 		pt nd;
+	public:
 		static bool drawboundingspheres;
 		static int drawboundingspheresdetail;
 		static bool drawaxis;
