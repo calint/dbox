@@ -1991,27 +1991,50 @@ namespace vbos{
 
 
 using namespace dbox;
+#include <string>
+#include <fstream>
 namespace app{
 	class vbodots:public vbo{
 		inline const char*name()const{return "vbodots";}
 		inline int elemtype()const{return 5;}
-		inline int nvertices()const{return 1024*1024;}
+		inline int nvertices()const{
+			string line;
+			ifstream infile("untitled.obj");
+			int nverts=0;
+			while(getline(infile,line)){
+				if(line.at(0)=='v')
+					nverts++;
+			}
+			return nverts;
+		}
 		virtual GLsizei nindices(){return 0;}
 		virtual void vertices(float fa[])const{
-			const int n=nvertices();
+			string line;
+			ifstream infile("untitled.obj");
+			int nverts=0;
 			int j=0;
-			for(int i=0;i<n;i++){
-				fa[j++]=rnd(-1,1);//x
-				fa[j++]=rnd(-1,1);//y
-				fa[j++]=rnd(-1,1);//z
+8			while(getline(infile,line)){
+				if(line.at(0)=='v'){
+					istringstream iss(line);
+					float x,y,z;
+					string tp;
+					if(!(iss>>tp>>x>>y>>z)){
+						break;
+					}
+					fa[j++]=x;
+					fa[j++]=y;
+					fa[j++]=z;
 
-				fa[j++]=rnd(0,1);//r
-				fa[j++]=rnd(0,1);//g
-				fa[j++]=rnd(0,1);//b
-				fa[j++]=rnd(0,1);//a
+					fa[j++]=1;//r
+					fa[j++]=1;//g
+					fa[j++]=1;//b
+					fa[j++]=1;//a
 
-				fa[j++]=0;//s
-				fa[j++]=0;//t
+					fa[j++]=0;//s
+					fa[j++]=0;//t
+
+					nverts++;
+				}
 			}
 		}
 	public:
@@ -2063,10 +2086,10 @@ namespace app{
 		vbodots::inst.glload();
 		vbosprite::inst.glload();
 
-		glob*o=new glob(wd,pt(),pt(),1,1,0,vbosprite::inst);
-		o->dpos(pt(),pt(0,0,1));
-		o->bits|=1;
-//		new objdots();
+//		glob*o=new glob(wd,pt(),pt(),1,1,0,vbosprite::inst);
+//		o->dpos(pt(),pt(0,0,1));
+//		o->bits|=1;
+		new objdots();
 
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
