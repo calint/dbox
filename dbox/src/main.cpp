@@ -514,14 +514,13 @@ namespace dbox{
 	};
 
 	//#include<png.h>
-	bool loadPngImage(const char*name,GLuint&outWidth,GLuint&outHeight,bool&outHasAlpha,int&bit_depth,GLubyte**outData){
+	bool loadPngImage(const char*name,GLuint&outWidth,GLuint&outHeight,GLubyte**outData){
 		png_structp png_ptr;
 		png_infop info_ptr;
 		unsigned int sig_read = 0;
 		int color_type, interlace_type;
 		FILE *fp;
-		outHasAlpha=false;
-
+		int bit_depth;
 		if ((fp = fopen(name, "rb")) == NULL)
 			return false;
 		png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL, NULL, NULL);
@@ -636,9 +635,7 @@ namespace dbox{
 		void glload(const char*pth="sprite0.png"){
 			path=pth;
 			GLubyte*rgba;
-		    bool hasAlpha;
-		    int bitdepth;
-		    const bool success=loadPngImage(path,wi,hi,hasAlpha,bitdepth,&rgba);
+		    const bool success=loadPngImage(path,wi,hi,&rgba);
 		    if(!success)throw signl(4,"could not load texture");
 			glGenTextures(1,&id);
 		    cout<<" "<<id<<" "<<path<<" "<<wi<<"x"<<hi<<" "<<wi*hi*4/1024<<" KB"<<endl;
