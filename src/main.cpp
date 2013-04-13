@@ -2098,18 +2098,16 @@ namespace app{
 
 
 		if(glGetError()!=GL_NO_ERROR)throw signl(2,"1opengl is in error state");
+	    cout<<"textures"<<endl;
 		GLubyte *textureImage;
 	    int width, height;
 	    bool hasAlpha;
 	    int bitdepth;
-	    char filename[] = "sprite1.png";
-	    bool success = loadPngImage(filename, width, height, hasAlpha, bitdepth,&textureImage);
-	    if (!success) {
-	        std::cout << "Unable to load png file" << std::endl;
-	        return;
-	    }
-	    cout<<"loading textures"<<endl;
-	    cout<<"  "<<filename<<" "<<width<<" x "<<height<<endl;
+	    char filename[]="sprite1.png";
+	    const bool success=loadPngImage(filename, width, height, hasAlpha, bitdepth,&textureImage);
+	    if(!success)throw signl(4,"could not load texture");
+		GLuint tx;glGenTextures(1,&tx);
+	    cout<<" "<<tx<<"  "<<filename<<" "<<width<<"x"<<height<<"  "<<width*height*4/1024<<" KB"<<endl;
 
 		{
 			width=128;height=128;
@@ -2125,10 +2123,9 @@ namespace app{
 				n-=4;
 			}
 		}
-		GLuint tx;glGenTextures(1,&tx);
-		glActiveTexture(GL_TEXTURE0);
+//		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D,tx);
-	    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,textureImage);
 	    glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
@@ -2136,6 +2133,7 @@ namespace app{
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
 		glBindTexture(GL_TEXTURE_2D,0);
+		delete textureImage;
 		if(glGetError()!=GL_NO_ERROR)throw signl(2,"opengl is in error state");
 
 		dbox::run();
