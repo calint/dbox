@@ -514,99 +514,38 @@ namespace dbox{
 	};
 
 	//#include<png.h>
-	bool loadPngImage(const char*name,GLuint&outWidth,GLuint&outHeight,GLubyte**outData){
+	static bool loadfilepng(const char*path,GLuint&wi,GLuint&hi,GLubyte*&rgba){
 		png_structp png_ptr;
 		png_infop info_ptr;
-		unsigned int sig_read=0;
+//		unsigned int sig_read=0;
 		int color_type,interlace_type;
-		FILE *fp;
 		int bit_depth;
-		png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL, NULL, NULL);
-		if (png_ptr==NULL){
-//			fclose(fp);
-			return false;
-		}
+		png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
+//		if(png_ptr==NULL)return false;
 		info_ptr=png_create_info_struct(png_ptr);
-		if(info_ptr==NULL){
-//			fclose(fp);
-			png_destroy_read_struct(&png_ptr,NULL,NULL);
+//		if(info_ptr==NULL){
+//			png_destroy_read_struct(&png_ptr,NULL,NULL);
+//			return false;
+//		}
+//		if(setjmp(png_jmpbuf(png_ptr))){
+//			png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
+//			return false;
+//		}
+		FILE *fp;
+		if((fp=fopen(path,"rb"))==NULL)
 			return false;
-		}
-
-		/* Set error handling if you are
-		 * using the setjmp/longjmp method
-		 * (this is the normal method of
-		 * doing things with libpng).
-		 * REQUIRED unless you  set up
-		 * your own error handlers in
-		 * the png_create_read_struct()
-		 * earlier.
-		 */
-		if (setjmp(png_jmpbuf(png_ptr))) {
-			/* Free all of the memory associated
-			 * with the png_ptr and info_ptr */
-			png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-//			fclose(fp);
-			/* If we get here, we had a
-			 * problem reading the file */
-			return false;
-		}
-		if ((fp=fopen(name,"rb"))==NULL)
-			return false;
-
-		/* Set up the output control if
-		 * you are using standard C streams */
 		png_init_io(png_ptr,fp);
-
-		/* If we have already
-		 * read some of the signature */
-		png_set_sig_bytes(png_ptr,(int)sig_read);
-
-		/*
-		 * If you have enough memory to read
-		 * in the entire image at once, and
-		 * you need to specify only
-		 * transforms that can be controlled
-		 * with one of the PNG_TRANSFORM_*
-		 * bits (this presently excludes
-		 * dithering, filling, setting
-		 * background, and doing gamma
-		 * adjustment), then you can read the
-		 * entire image (including pixels)
-		 * into the info structure with this
-		 * call
-		 *
-		 * PNG_TRANSFORM_STRIP_16 |
-		 * PNG_TRANSFORM_PACKING  forces 8 bit
-		 * PNG_TRANSFORM_EXPAND forces to
-		 *  expand a palette into RGB
-		 */
+//		png_set_sig_bytes(png_ptr,(int)sig_read);
 		png_read_png(png_ptr,info_ptr,PNG_TRANSFORM_STRIP_16|PNG_TRANSFORM_PACKING|PNG_TRANSFORM_EXPAND,NULL);
-		png_uint_32 width,height;
-		png_get_IHDR(png_ptr,info_ptr,&width,&height,&bit_depth,&color_type,&interlace_type,NULL,NULL);
-		outWidth=width;
-		outHeight=height;
-
-		size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-		*outData = (unsigned char*) malloc(row_bytes * (size_t)outHeight);
-
-		png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
-
-		for(GLuint i=0;i<outHeight;i++){
-			// note that png is ordered top to
-			// bottom, but OpenGL expect it bottom to top
-			// so the order or swapped
-			memcpy(*outData+row_bytes*(outHeight-1-i),row_pointers[i],row_bytes);
+		png_get_IHDR(png_ptr,info_ptr,&wi,&hi,&bit_depth,&color_type,&interlace_type,NULL,NULL);
+		const size_t row_bytes=png_get_rowbytes(png_ptr,info_ptr);
+		rgba=(GLubyte*)malloc(row_bytes*(size_t)hi);
+		const png_bytepp row_pointers=png_get_rows(png_ptr,info_ptr);
+		for(GLuint i=0;i<hi;i++){
+			memcpy(rgba+row_bytes*i,row_pointers[i],row_bytes);
 		}
-
-		/* Clean up after the read,
-		 * and free any memory allocated */
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-
-		/* Close the file */
+		png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
 		fclose(fp);
-
-		/* That's it */
 		return true;
 	}
 	GLuint png_texture_load(const char * file_name, int * width, int * height)
@@ -768,15 +707,16 @@ namespace dbox{
 		GLuint id,wi,hi;
 		const char*path;
 	public:
+		texture():id(0),wi(0),hi(0),path(0){}
 		inline GLuint getid()const{return id;}
 //		texture(const texture&t):id(t.id),wi(t.wi),hi(t.wi){}
-		texture(const GLuint id,const GLuint wi,const GLuint hi):
-			id(id),wi(wi),hi(hi),path(0)
-		{}
+//		texture(const GLuint id,const GLuint wi,const GLuint hi):
+//			id(id),wi(wi),hi(hi),path(0)
+//		{}
 		inline void glbind()const{glBindTexture(GL_TEXTURE_2D,id);}
 		void glload(const GLubyte*rgba,const GLuint wi,const GLuint hi){
 		    glbind();
-		    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+//		    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 			glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,(GLsizei)wi,(GLsizei)hi,0,GL_RGBA,GL_UNSIGNED_BYTE,rgba);
 		    glGenerateMipmap(GL_TEXTURE_2D);
 			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
@@ -785,11 +725,10 @@ namespace dbox{
 			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
 			glBindTexture(GL_TEXTURE_2D,0);
 		}
-		void glload(const char*pth="sprite0.png"){
+		void glloadfile(const char*pth="sprite0.png"){
 			path=pth;
 			GLubyte*rgba;
-		    const bool success=loadPngImage(path,wi,hi,&rgba);
-		    if(!success)throw signl(4,"could not load texture");
+		    if(!loadfilepng(path,wi,hi,rgba))throw signl(4,"could not load texture");
 			glGenTextures(1,&id);
 		    cout<<" "<<id<<" "<<path<<" "<<wi<<"x"<<hi<<" "<<wi*hi*4/1024<<" KB"<<endl;
 		    glload(rgba,wi,hi);
@@ -819,7 +758,7 @@ namespace dbox{
 		GLsizei nind;
 		texture txp;
 	public:
-		vbo():glva(0),glvib(0),glvb(0),nind(0),txp(0,0,0){}
+		vbo():glva(0),glvib(0),glvb(0),nind(0){}
 		virtual~vbo(){}
 		virtual inline const char*name()const{return "vbo";}
 		virtual inline int nvertices()const{return 4;}
@@ -901,7 +840,7 @@ namespace dbox{
 			const char*path=teximgpath();
 			if(path){
 				cout<<"  texture";
-				txp.glload(path);
+				txp.glloadfile(path);
 			}
 		}
 		void gldraw()const{
@@ -1047,19 +986,19 @@ namespace vbos{
 			//0
 			fa[c++]=-w;fa[c++]=w;fa[c++]=0;//xyz
 			fa[c++]= 0;fa[c++]=0;fa[c++]=0;fa[c++]=0;//rgba
-			fa[c++]= 0;fa[c++]=1;//st
+			fa[c++]= 0;fa[c++]=0;//st
 	//		//1
 			fa[c++]=-w;fa[c++]=-w;fa[c++]=0;//xyz
 			fa[c++]= 0;fa[c++]=0;fa[c++]=0;fa[c++]=0;//rgba
-			fa[c++]= 0;fa[c++]=0;//st
+			fa[c++]= 0;fa[c++]=1;//st
 	//		//2
 			fa[c++]= w;fa[c++]=-w;fa[c++]=0;//xyz
 			fa[c++]= 0;fa[c++]=0;fa[c++]=0;fa[c++]=0;//rgba
-			fa[c++]= 1;fa[c++]=0;//st
+			fa[c++]= 1;fa[c++]=1;//st
 	//		//3
 			fa[c++]= w;fa[c++]= w;fa[c++]=0;//xyz
 			fa[c++]= 0;fa[c++]=0;fa[c++]=0;fa[c++]=0;//rgba
-			fa[c++]= 1;fa[c++]=1;//st
+			fa[c++]= 1;fa[c++]=0;//st
 		}
 
 		static spritexy inst;
@@ -2054,7 +1993,7 @@ namespace vbos{
 		}
 		void fire(){
 			const float r=.01f;
-			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbo::inst);
+			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbos::spritexy::inst);
 			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
 
 //			nd.set(getmxv().zaxis().neg().scale(dt()));
@@ -2276,7 +2215,7 @@ namespace app{
 
 	class vbosprite:public vbos::spritexy{
 	public:
-		inline const char*name()const{return "sprite";}
+		inline const char*name()const{return "vbosprite";}
 		inline const char*teximgpath()const{return "sprite2.png";}
 		static vbosprite inst;
 	};
