@@ -1,3 +1,4 @@
+#clear
 bin=dbox
 cmd="clang++ -o $bin src/*.cpp \
 	glfw/lib/osx/libglfw.a \
@@ -10,6 +11,7 @@ cmd="clang++ -o $bin src/*.cpp \
  	-I/usr/X11/include/ -L/usr/X11/lib/ -lpng \
 	-Wfatal-errors"&&
 echo $cmd&&
+#cat src/main.cpp |grep 'class\|namespace'&&
 $cmd&&
 ls -la $bin&&
 cat src/*.cpp|gzip|wc&&
