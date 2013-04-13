@@ -678,21 +678,12 @@ namespace dbox{
 			glBindVertexArray(glva);
 			glEnableVertexAttribArray(0);
 			glEnableVertexAttribArray(1);
-	//		if(tx!=null){
-//				glBindTexture(GL_TEXTURE_2D,tx.id);
-//				glEnableVertexAttribArray(2);
-	//		}
-			if(txp.getid()){
+			if(txp.getid()){//? id==0 notexture
 				glEnableVertexAttribArray(2);
-				glActiveTexture(GL_TEXTURE2);
-				glBindTexture(GL_TEXTURE_2D,txp.getid());
-//				txp.glbind();
-//				glBindTexture(GL_TEXTURE_2D,1);
-				glUniform1i(shader.utx,2);
-			}else{
-//				glDisableVertexAttribArray(2);
-				glBindTexture(GL_TEXTURE_2D,0);
+				glUniform1i(shader.utx,3);
+				glActiveTexture(GL_TEXTURE3);
 			}
+			txp.glbind();
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glvib);//? only for elem ops
 			switch(elemtype()){
@@ -844,6 +835,7 @@ namespace vbos{
 		list<glob*>chs;
 		list<glob*>chsrm;
 		list<glob*>chsadd;
+	public:
 		int bits;
 	private:
 		long ptmxupdtk;
@@ -2073,6 +2065,7 @@ namespace app{
 
 		glob*o=new glob(wd,pt(),pt(),1,1,0,vbosprite::inst);
 		o->dpos(pt(),pt(0,0,1));
+		o->bits|=1;
 //		new objdots();
 
 		wn=new windo();
