@@ -124,7 +124,7 @@ namespace dbox{
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D utex;uniform sampler2D ushad;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?-.2:0.;gl_FragColor=la*vec4(1,1,1,1)+tex+gl_Color;}"};
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D ushad;uniform sampler2D utex;varying vec3 vnml;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?.5:1.;vec3 lht=vec3(1,0,0);float ln=dot(normalize(vnml),lht);gl_FragColor=la*(tex+ln+gl_Color);}"};
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D ushad;uniform sampler2D utex;varying vec3 vnml;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?.5:1.;vec3 lht=vec3(1,0,0);float ln=dot(normalize(vnml),lht);float wa=gl_FragCoord.w;gl_FragColor=la*(ln*.2+wa*.5+tex+gl_Color);}"};
-			const GLchar*frgshdrsrc[]={"#version 150 core\nuniform sampler2D utx;in vec4 rgba;in vec2 txcoord;out vec4 out_Color;void main(){vec4 txrgba=texture(utx,txcoord);out_Color=txrgba;/*+vec4(txcoord,1,1);*//*rgba+txrgba;*//*+rgba+(1-gl_FragCoord.z);*/}"};
+			const GLchar*frgshdrsrc[]={"#version 150 core\nuniform sampler2D utx;in vec4 rgba;in vec2 txcoord;out vec4 out_Color;void main(){vec4 txrgba=texture(utx,txcoord);out_Color=txrgba+rgba;/*+vec4(txcoord,1,1);*//*rgba+txrgba;*//*+rgba+(1-gl_FragCoord.z);*/}"};
 			const GLint frgshdrsrclen[]={GLint(strlen(frgshdrsrc[0]))};
 			glShaderSource(frgshdr,1,frgshdrsrc,frgshdrsrclen);
 			glCompileShader(frgshdr);
@@ -513,6 +513,153 @@ namespace dbox{
 		}
 	};
 
+	//#include<png.h>
+	bool loadPngImage(const char*name,GLuint&outWidth,GLuint&outHeight,bool&outHasAlpha,int&bit_depth,GLubyte**outData){
+		png_structp png_ptr;
+		png_infop info_ptr;
+		unsigned int sig_read = 0;
+		int color_type, interlace_type;
+		FILE *fp;
+		outHasAlpha=false;
+
+		if ((fp = fopen(name, "rb")) == NULL)
+			return false;
+		png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL, NULL, NULL);
+		if (png_ptr==NULL){
+			fclose(fp);
+			return false;
+		}
+		info_ptr=png_create_info_struct(png_ptr);
+		if(info_ptr==NULL){
+			fclose(fp);
+			png_destroy_read_struct(&png_ptr,NULL,NULL);
+			return false;
+		}
+
+		/* Set error handling if you are
+		 * using the setjmp/longjmp method
+		 * (this is the normal method of
+		 * doing things with libpng).
+		 * REQUIRED unless you  set up
+		 * your own error handlers in
+		 * the png_create_read_struct()
+		 * earlier.
+		 */
+		if (setjmp(png_jmpbuf(png_ptr))) {
+			/* Free all of the memory associated
+			 * with the png_ptr and info_ptr */
+			png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+			fclose(fp);
+			/* If we get here, we had a
+			 * problem reading the file */
+			return false;
+		}
+
+		/* Set up the output control if
+		 * you are using standard C streams */
+		png_init_io(png_ptr,fp);
+
+		/* If we have already
+		 * read some of the signature */
+		png_set_sig_bytes(png_ptr,(int)sig_read);
+
+		/*
+		 * If you have enough memory to read
+		 * in the entire image at once, and
+		 * you need to specify only
+		 * transforms that can be controlled
+		 * with one of the PNG_TRANSFORM_*
+		 * bits (this presently excludes
+		 * dithering, filling, setting
+		 * background, and doing gamma
+		 * adjustment), then you can read the
+		 * entire image (including pixels)
+		 * into the info structure with this
+		 * call
+		 *
+		 * PNG_TRANSFORM_STRIP_16 |
+		 * PNG_TRANSFORM_PACKING  forces 8 bit
+		 * PNG_TRANSFORM_EXPAND forces to
+		 *  expand a palette into RGB
+		 */
+		png_read_png(png_ptr,info_ptr,PNG_TRANSFORM_STRIP_16|PNG_TRANSFORM_PACKING|PNG_TRANSFORM_EXPAND,NULL);
+		png_uint_32 width,height;
+		png_get_IHDR(png_ptr,info_ptr,&width,&height,&bit_depth,&color_type,&interlace_type,NULL,NULL);
+		outWidth=width;
+		outHeight=height;
+
+		size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+		*outData = (unsigned char*) malloc(row_bytes * (size_t)outHeight);
+
+		png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
+
+		for(GLuint i=0;i<outHeight;i++){
+			// note that png is ordered top to
+			// bottom, but OpenGL expect it bottom to top
+			// so the order or swapped
+			memcpy(*outData+row_bytes*(outHeight-1-i),row_pointers[i],row_bytes);
+		}
+
+		/* Clean up after the read,
+		 * and free any memory allocated */
+		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+
+		/* Close the file */
+		fclose(fp);
+
+		/* That's it */
+		return true;
+	}
+
+
+	class texture{
+		GLuint id,wi,hi;
+		const char*path;
+	public:
+		inline GLuint getid()const{return id;}
+//		texture(const texture&t):id(t.id),wi(t.wi),hi(t.wi){}
+		texture(const GLuint id,const GLuint wi,const GLuint hi):
+			id(id),wi(wi),hi(hi),path(0)
+		{}
+		inline void glbind()const{glBindTexture(GL_TEXTURE_2D,id);}
+		void glload(const GLubyte*rgba,const GLuint wi,const GLuint hi){
+		    glbind();
+		    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+			glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,(GLsizei)wi,(GLsizei)hi,0,GL_RGBA,GL_UNSIGNED_BYTE,rgba);
+		    glGenerateMipmap(GL_TEXTURE_2D);
+			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+			glBindTexture(GL_TEXTURE_2D,0);
+		}
+		void glload(const char*pth="sprite0.png"){
+			path=pth;
+			GLubyte*rgba;
+		    bool hasAlpha;
+		    int bitdepth;
+		    const bool success=loadPngImage(path,wi,hi,hasAlpha,bitdepth,&rgba);
+		    if(!success)throw signl(4,"could not load texture");
+			glGenTextures(1,&id);
+		    cout<<" "<<id<<" "<<path<<" "<<wi<<"x"<<hi<<" "<<wi*hi*4/1024<<" KB"<<endl;
+		    glload(rgba,wi,hi);
+		    delete rgba;
+		}
+		void genrandom(const int wi=64,const int hi=64){
+			int n=4*wi*hi;
+			GLubyte*rgba=new GLubyte[n];//? leak
+			GLubyte*p=rgba;
+			while(n){
+				p[0]=(GLubyte)rnd(0,256);
+				p[1]=(GLubyte)rnd(0,256);
+				p[2]=(GLubyte)rnd(0,256);
+				p[3]=255;
+				p+=4;
+				n-=4;
+			}
+			glload(rgba,(GLuint)wi,(GLuint)hi);
+		}
+	};
 
 	//#include <list>
 	class vbo{
@@ -520,8 +667,9 @@ namespace dbox{
 		GLuint glvib;//indices array
 		GLuint glvb;
 		GLsizei nind;
+		texture txp;
 	public:
-		vbo():glva(0),glvib(0),glvb(0),nind(0){}
+		vbo():glva(0),glvib(0),glvb(0),nind(0),txp(0,0,0){}
 		virtual~vbo(){}
 		virtual inline const char*name()const{return "vbo";}
 		virtual inline int nvertices()const{return 4;}
@@ -552,6 +700,8 @@ namespace dbox{
 			ba[c++]=0;ba[c++]=1;ba[c++]=2;
 			ba[c++]=2;ba[c++]=3;ba[c++]=0;
 		}
+//		virtual inline const char*teximgpath()const{return "sprite0.png";}
+		virtual inline const char*teximgpath()const{return 0;}
 		void glload(){
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error state");
 			const int stride=9;//xyz,rgba,st
@@ -597,26 +747,12 @@ namespace dbox{
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER,n,ib,GL_STATIC_DRAW);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
 			delete ib;
-	//		final String imgpath=imgpath();
-	//		if(imgpath!=null){
-	//			System.out.println("  texture "+imgpath);
-	//			tx=loadtexture(imgpath,null,0,0);
-	//		}else{
-	//			final int[]txsize=imgsize();
-	//			if(txsize!=null){
-	//				final int wi=txsize[0],hi=txsize[1],bpp=txsize[2];
-	//				final int n=wi*hi*bpp;
-	//				System.out.println("  texture alloc "+wi+"x"+hi+"x"+bpp*8+" bpp");
-	//				final ByteBuffer txdata=ByteBuffer.allocateDirect(n);
-	//				System.out.println("  texture generate");
-	//				imggen(txdata);
-	//				txdata.flip();
-	//				System.out.println("  texture load");
-	//				tx=loadtexture(null,txdata,txsize[0],txsize[1]);
-	//			}
-	//		}
-	//		System.out.println();
 
+			const char*path=teximgpath();
+			if(path){
+				cout<<"  texture";
+				txp.glload(path);
+			}
 		}
 		void gldraw()const{
 			glBindVertexArray(glva);
@@ -626,11 +762,17 @@ namespace dbox{
 //				glBindTexture(GL_TEXTURE_2D,tx.id);
 //				glEnableVertexAttribArray(2);
 	//		}
+			if(txp.getid()){
 				glEnableVertexAttribArray(2);
 				glActiveTexture(GL_TEXTURE2);
-				glBindTexture(GL_TEXTURE_2D,1);
+				glBindTexture(GL_TEXTURE_2D,txp.getid());
+//				txp.glbind();
+//				glBindTexture(GL_TEXTURE_2D,1);
 				glUniform1i(shader.utx,2);
-
+			}else{
+				glDisableVertexAttribArray(2);
+				glBindTexture(GL_TEXTURE_2D,0);
+			}
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glvib);//? only for elem ops
 			switch(elemtype()){
@@ -744,6 +886,15 @@ namespace vbos{
 		static squarexy inst;
 	};
 	squarexy squarexy::inst;
+
+	class spritexy:public vbo{
+	public:
+		inline const char*name()const{return "spritexy";}
+		inline int elemtype()const{return 0;}
+		inline const char*teximgpath()const{return "sprite1.png";}
+		static spritexy inst;
+	};
+	spritexy spritexy::inst;
 }
 	class glob:public pt{
 		const int id;
@@ -1185,14 +1336,6 @@ namespace vbos{
 			lsmx.clear();
 			return true;
 		}
-	};
-
-	class texture{
-	public:
-		const GLuint id,wi,hi;
-		texture(const GLuint id,const GLuint wi,const GLuint hi):
-			id(id),wi(wi),hi(hi)
-		{}
 	};
 
 
@@ -1741,7 +1884,7 @@ namespace vbos{
 		}
 		void fire(){
 			const float r=.01f;
-			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbos::circlexy::inst);
+			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbo::inst);
 			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
 
 //			nd.set(getmxv().zaxis().neg().scale(dt()));
@@ -1876,6 +2019,7 @@ namespace vbos{
 		vbos::axis::inst.glload();
 		vbos::circlexy::inst.glload();
 		vbos::squarexy::inst.glload();
+		vbos::spritexy::inst.glload();
 	}
 
 	void run(){
@@ -1906,115 +2050,7 @@ namespace vbos{
 		}
 		cout<<endl<<frm/t1.dt()<<endl;
 	}
-	class windobot{
-	public:
-		windo*wn;
-		void tick(){
-	//		flf();
-			wn->onkeyb('j',true,0,0);
-	//		wn->keydn('w',0,0);
-	//		wn->onkeyb(' ',true,0,0);
-			wn->onkeyb('c',true,0,0);
-		}
-	};
 
-//#include<png.h>
-	bool loadPngImage(char *name, int &outWidth, int &outHeight, bool &outHasAlpha,int&bit_depth,GLubyte **outData) {
-	    png_structp png_ptr;
-	    png_infop info_ptr;
-	    unsigned int sig_read = 0;
-	    int color_type, interlace_type;
-	    FILE *fp;
-	    outHasAlpha=false;
-
-	    if ((fp = fopen(name, "rb")) == NULL)
-	        return false;
-	    png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL, NULL, NULL);
-	    if (png_ptr==NULL){
-	        fclose(fp);
-	        return false;
-	    }
-	    info_ptr=png_create_info_struct(png_ptr);
-	    if(info_ptr==NULL){
-	        fclose(fp);
-	        png_destroy_read_struct(&png_ptr,NULL,NULL);
-	        return false;
-	    }
-
-	    /* Set error handling if you are
-	     * using the setjmp/longjmp method
-	     * (this is the normal method of
-	     * doing things with libpng).
-	     * REQUIRED unless you  set up
-	     * your own error handlers in
-	     * the png_create_read_struct()
-	     * earlier.
-	     */
-	    if (setjmp(png_jmpbuf(png_ptr))) {
-	        /* Free all of the memory associated
-	         * with the png_ptr and info_ptr */
-	        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	        fclose(fp);
-	        /* If we get here, we had a
-	         * problem reading the file */
-	        return false;
-	    }
-
-	    /* Set up the output control if
-	     * you are using standard C streams */
-	    png_init_io(png_ptr,fp);
-
-	    /* If we have already
-	     * read some of the signature */
-	    png_set_sig_bytes(png_ptr,(int)sig_read);
-
-	    /*
-	     * If you have enough memory to read
-	     * in the entire image at once, and
-	     * you need to specify only
-	     * transforms that can be controlled
-	     * with one of the PNG_TRANSFORM_*
-	     * bits (this presently excludes
-	     * dithering, filling, setting
-	     * background, and doing gamma
-	     * adjustment), then you can read the
-	     * entire image (including pixels)
-	     * into the info structure with this
-	     * call
-	     *
-	     * PNG_TRANSFORM_STRIP_16 |
-	     * PNG_TRANSFORM_PACKING  forces 8 bit
-	     * PNG_TRANSFORM_EXPAND forces to
-	     *  expand a palette into RGB
-	     */
-	    png_read_png(png_ptr,info_ptr,PNG_TRANSFORM_STRIP_16|PNG_TRANSFORM_PACKING|PNG_TRANSFORM_EXPAND,NULL);
-	    png_uint_32 width,height;
-	    png_get_IHDR(png_ptr,info_ptr,&width,&height,&bit_depth,&color_type,&interlace_type,NULL,NULL);
-	    outWidth = (int)width;
-	    outHeight =(int)height;
-
-	    size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-	    *outData = (unsigned char*) malloc(row_bytes * (size_t)outHeight);
-
-	    png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
-
-	    for (int i = 0; i < outHeight; i++) {
-	        // note that png is ordered top to
-	        // bottom, but OpenGL expect it bottom to top
-	        // so the order or swapped
-	        memcpy(*outData+((int)row_bytes * (outHeight-1-i)), row_pointers[i], row_bytes);
-	    }
-
-	    /* Clean up after the read,
-	     * and free any memory allocated */
-	    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-
-	    /* Close the file */
-	    fclose(fp);
-
-	    /* That's it */
-	    return true;
-	}
 }
 #endif
 
@@ -2082,78 +2118,26 @@ namespace app{
 		}
 		app::vbodots::inst.glload();
 
-		app::objaxis*o=new app::objaxis();
-//		o->radius(1);
-//		o->setscl(pt(.1f,.1f,.1f));
-		o->dpos(pt(),pt(0,0,180));
-
-
-//		app::objdots*o=new app::objdots();
-//		o->dpos(pt(0,0,0),pt(0,0,90));
-//		o->setscl(pt(.5f,.5f,.5f));
-//		o=new app::objdots();
-//		o->dpos(pt(0,0,0),pt(0,0,20));
-//
-//		const int n=128;
-//		for(int i=0;i<n;i++){
-//			new glob(wd,pt(rnd(-1,1),rnd(-1,1),0),pt(),.01f,1,0,vb);
-//		}
-//		const int n=512;
-//		const float r=.01f;
-//		for(int i=0;i<n;i++){
-//			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbo::inst);
-//			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
-//		}
-		new glob(wd,pt(),pt(),1,1,0,vbo::inst);
+		new glob(wd,pt(),pt(),1,1,0,vbos::spritexy::inst);
 
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
 		wn->dpos(pt(0,0,-.01f),pt());
 
-
-
-		if(glGetError()!=GL_NO_ERROR)throw signl(2,"1opengl is in error state");
-	    cout<<"textures"<<endl;
-		GLubyte *textureImage;
-	    int width, height;
-	    bool hasAlpha;
-	    int bitdepth;
-	    char filename[]="sprite1.png";
-	    const bool success=loadPngImage(filename, width, height, hasAlpha, bitdepth,&textureImage);
-	    if(!success)throw signl(4,"could not load texture");
-		GLuint tx;glGenTextures(1,&tx);
-	    cout<<" "<<tx<<"  "<<filename<<" "<<width<<"x"<<height<<"  "<<width*height*4/1024<<" KB"<<endl;
-
-		{
-			width=128;height=128;
-			int n=4*width*height;
-			textureImage=new GLubyte[n];//? leak
-			GLubyte*ptr=textureImage;
-			while(n){
-				ptr[0]=(GLubyte)rnd(0,256);
-				ptr[1]=(GLubyte)rnd(0,256);
-				ptr[2]=(GLubyte)rnd(0,256);
-				ptr[3]=255;
-				ptr+=4;
-				n-=4;
-			}
-		}
-		texture tex(tx,(GLuint)width,(GLuint)height);
-//		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D,tex.id);
-	    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,textureImage);
-	    glGenerateMipmap(GL_TEXTURE_2D);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-		glBindTexture(GL_TEXTURE_2D,0);
-		delete textureImage;
-		if(glGetError()!=GL_NO_ERROR)throw signl(2,"opengl is in error state");
-
 		dbox::run();
 	}
+
+	class windobot{
+	public:
+		windo*wn;
+		void tick(){
+	//		flf();
+			wn->onkeyb('j',true,0,0);
+	//		wn->keydn('w',0,0);
+	//		wn->onkeyb(' ',true,0,0);
+			wn->onkeyb('c',true,0,0);
+		}
+	};
 }
 //////////////////////////////////////////////////////////////////////////
 int main(int argc,char**argv){app::run(argc,argv);return 0;}
