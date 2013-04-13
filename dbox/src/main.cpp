@@ -515,24 +515,22 @@ namespace dbox{
 
 	//#include<png.h>
 	void loadfilepng(const char*path,unsigned int&wi,unsigned int&hi,unsigned char*&rgba){
-		png_structp png_ptr;
-		png_infop info_ptr;
-		int color_type,interlace_type;
-		int bit_depth;
-		png_ptr=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
-		info_ptr=png_create_info_struct(png_ptr);
+		png_structp png=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
+		png_infop pnginfo=png_create_info_struct(png);
 		FILE *fp;
 		if((fp=fopen(path,"rb"))==NULL)signl(4,path);
-		png_init_io(png_ptr,fp);
-		png_read_png(png_ptr,info_ptr,PNG_TRANSFORM_STRIP_16|PNG_TRANSFORM_PACKING|PNG_TRANSFORM_EXPAND,NULL);
-		png_get_IHDR(png_ptr,info_ptr,&wi,&hi,&bit_depth,&color_type,&interlace_type,NULL,NULL);
+		png_init_io(png,fp);
+		//PNG_TRANSFORM_STRIP_16 PNG_TRANSFORM_PACKING PNG_TRANSFORM_EXPAND
+		png_read_png(png,pnginfo,0,NULL);
+		int colortype,interlacetype,bitdepth;
+		png_get_IHDR(png,pnginfo,&wi,&hi,&bitdepth,&colortype,&interlacetype,NULL,NULL);
 		//? assert valid rgba
-		const size_t row_bytes=png_get_rowbytes(png_ptr,info_ptr);
-		rgba=(unsigned char*)malloc(row_bytes*(size_t)hi);
-		const png_bytepp row_pointers=png_get_rows(png_ptr,info_ptr);
+		const size_t nrowbytes=png_get_rowbytes(png,pnginfo);
+		rgba=(unsigned char*)malloc(nrowbytes*(size_t)hi);
+		const png_bytepp pointers=png_get_rows(png,pnginfo);
 		for(unsigned int i=0;i<hi;i++)
-			memcpy(rgba+row_bytes*i,row_pointers[i],row_bytes);
-		png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
+			memcpy(rgba+nrowbytes*i,pointers[i],nrowbytes);
+		png_destroy_read_struct(&png,&pnginfo,NULL);
 		fclose(fp);
 	}
 
