@@ -1188,7 +1188,11 @@ namespace vbos{
 	};
 
 	class texture{
-		GLint id,wi,hi;
+	public:
+		const GLuint id,wi,hi;
+		texture(const GLuint id,const GLuint wi,const GLuint hi):
+			id(id),wi(wi),hi(hi)
+		{}
 	};
 
 
@@ -2123,7 +2127,7 @@ namespace app{
 		{
 			width=128;height=128;
 			int n=4*width*height;
-			textureImage=new GLubyte[n];
+			textureImage=new GLubyte[n];//? leak
 			GLubyte*ptr=textureImage;
 			while(n){
 				ptr[0]=(GLubyte)rnd(0,256);
@@ -2134,8 +2138,9 @@ namespace app{
 				n-=4;
 			}
 		}
+		texture tex(tx,(GLuint)width,(GLuint)height);
 //		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D,tx);
+		glBindTexture(GL_TEXTURE_2D,tex.id);
 	    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 		glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,textureImage);
 	    glGenerateMipmap(GL_TEXTURE_2D);
