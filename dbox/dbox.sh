@@ -1,5 +1,5 @@
 bin=dbox
-clang++ -o $bin src/*.cpp \
+cmd="clang++ -o $bin src/*.cpp \
 	glfw/lib/osx/libglfw.a \
 	-framework cocoa \
 	-framework opengl \
@@ -8,10 +8,11 @@ clang++ -o $bin src/*.cpp \
 	-std=gnu++11 \
 	-O3 \
  	-I/usr/X11/include/ -L/usr/X11/lib/ -lpng \
-	-Wfatal-errors &&
-
-
-ls -la $bin &&
-
+	-Wfatal-errors"&&
+echo $cmd&&
+$cmd&&
+ls -la $bin&&
+cat src/*.cpp|gzip|wc&&
+#cat $bin|gzip|wc&&
 ./$bin
 
