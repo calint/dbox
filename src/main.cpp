@@ -124,7 +124,7 @@ namespace dbox{
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D utex;uniform sampler2D ushad;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?-.2:0.;gl_FragColor=la*vec4(1,1,1,1)+tex+gl_Color;}"};
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D ushad;uniform sampler2D utex;varying vec3 vnml;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?.5:1.;vec3 lht=vec3(1,0,0);float ln=dot(normalize(vnml),lht);gl_FragColor=la*(tex+ln+gl_Color);}"};
 	//		const GLchar*frgshdrsrc[]={"uniform sampler2D ushad;uniform sampler2D utex;varying vec3 vnml;void main(){vec4 tex;tex=texture2D(utex,gl_TexCoord[1].st);vec4 shad;shad=texture2DProj(ushad,gl_TexCoord[2]);float la=shad.z<gl_TexCoord[2].z/gl_TexCoord[2].w?.5:1.;vec3 lht=vec3(1,0,0);float ln=dot(normalize(vnml),lht);float wa=gl_FragCoord.w;gl_FragColor=la*(ln*.2+wa*.5+tex+gl_Color);}"};
-			const GLchar*frgshdrsrc[]={"#version 150 core\nuniform sampler2D utx;in vec4 rgba;in vec2 txcoord;out vec4 out_Color;void main(){vec4 txrgba=texture(utx,txcoord);out_Color=txrgba+rgba;/*+vec4(txcoord,1,1);*//*rgba+txrgba;*//*+rgba+(1-gl_FragCoord.z);*/}"};
+			const GLchar*frgshdrsrc[]={"#version 150 core\nuniform sampler2D utx;in vec4 rgba;in vec2 txcoord;out vec4 out_Color;void main(){vec4 txrgba=texture(utx,txcoord);if(txrgba.a==0)discard;out_Color=txrgba+rgba;/*+vec4(txcoord,1,1);*//*rgba+txrgba;*//*+rgba+(1-gl_FragCoord.z);*/}"};
 			const GLint frgshdrsrclen[]={GLint(strlen(frgshdrsrc[0]))};
 			glShaderSource(frgshdr,1,frgshdrsrc,frgshdrsrclen);
 			glCompileShader(frgshdr);
@@ -1617,6 +1617,7 @@ namespace vbos{
 	//		sts<<"reshape("<<wi<<"x"<<hi<<")";wi=width;hi=height;
 		}
 		void drawframe(){
+			glClearColor(1,0,0,1);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			mtx mwv;
 			mwv.wv(*this,agl());//? cache
@@ -1825,7 +1826,7 @@ namespace vbos{
 		void fire(){
 			const float r=.01f;
 			const float s=.5f;
-			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),.25f),pt(),r,1,0,vbos::spritexy::inst);
+			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),0),pt(),r,1,0,vbos::spritexy::inst);
 			const float d=.05f;
 			g->dpos(pt(rnd(-d,d),rnd(-d,d),0),pt(0,0,rnd(-180,180)));
 
@@ -2070,8 +2071,8 @@ namespace app{
 		vbodots::inst.glload();
 		vbosprite::inst.glload();
 
-//		glob*o=new glob(wd,pt(),pt(),1,1,0,vbos::spritexy::inst);
-//		o->dpos(pt(),pt(0,0,1));
+		glob*o=new glob(wd,pt(),pt(),1,1,0,vbosprite::inst);
+		o->dpos(pt(),pt(0,0,1));
 //		new objdots();
 
 		wn=new windo();
