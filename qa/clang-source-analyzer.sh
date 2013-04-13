@@ -12,6 +12,7 @@ cmd="$scn $cc -o $bin $src\
  	-framework iokit \
 	-pedantic -pedantic-errors -Wall -Wextra -Werror -Wconversion \
 	-std=gnu++11 \
+ 	-I/usr/X11/include/ -L/usr/X11/lib/ -lpng \
 	-Wfatal-errors"&&
 echo $cmd&&
 $cmd&>clang-source-analyzer.log&&
