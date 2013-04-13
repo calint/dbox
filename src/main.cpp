@@ -1994,12 +1994,14 @@ using namespace dbox;
 #include <string>
 #include <fstream>
 namespace app{
-	class vbodots:public vbo{
-		inline const char*name()const{return "vbodots";}
+	class vboobj:public vbo{
+		virtual inline const char*name()const{return "vboobj";}
+		virtual inline const char*objfilepath()const{return "untitled0.obj";}
 		inline int elemtype()const{return 5;}
-		inline int nvertices()const{
+		inline int nvertices()const{//? filescannedtwice
 			string line;
-			ifstream infile("untitled.obj");
+			ifstream infile(objfilepath());
+			if(!infile.is_open())throw signl(1,objfilepath());
 			int nverts=0;
 			while(getline(infile,line)){
 				if(line.at(0)=='v')
@@ -2010,10 +2012,11 @@ namespace app{
 		virtual GLsizei nindices(){return 0;}
 		virtual void vertices(float fa[])const{
 			string line;
-			ifstream infile("untitled.obj");
+			ifstream infile(objfilepath());
+			cout<<"  "<<objfilepath()<<endl;
 			int nverts=0;
 			int j=0;
-8			while(getline(infile,line)){
+			while(getline(infile,line)){
 				if(line.at(0)=='v'){
 					istringstream iss(line);
 					float x,y,z;
@@ -2038,23 +2041,28 @@ namespace app{
 			}
 		}
 	public:
-		static vbodots inst;
+		static vboobj inst;
 	};
-	vbodots vbodots::inst;
+	vboobj vboobj::inst;
 
-	class objdots:public glob{
+	class vbomonkey:public vboobj{
+		inline const char*name()const{return "vbomonkey";}
+		inline const char*objfilepath()const{return "untitled0.obj";}
 	public:
-		objdots(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=.5f,vbo&vb=vbodots::inst):
+		static vbomonkey inst;
+	};
+	vbomonkey vbomonkey::inst;
+
+	class objobj:public glob{
+	public:
+		objobj(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=1,vbo&vb=vboobj::inst):
 			glob(g,p,a,r,density_gcm3,bounciness,vb)
-		{
-			bits|=1;
-//			issolid();
-		}
+		{}
 	};
 
 	class objaxis:public glob{
 	public:
-		objaxis(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=.5f,vbo&vb=*(vbo*)0):
+		objaxis(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=1,vbo&vb=*(vbo*)0):
 			glob(g,p,a,r,density_gcm3,bounciness,vb)
 		{
 			bits|=1;
@@ -2083,13 +2091,18 @@ namespace app{
 			dbox::net.init();
 		}
 
-		vbodots::inst.glload();
+		vboobj::inst.glload();
 		vbosprite::inst.glload();
+		vbomonkey::inst.glload();
 
-//		glob*o=new glob(wd,pt(),pt(),1,1,0,vbosprite::inst);
-//		o->dpos(pt(),pt(0,0,1));
+		const float s=.1f;
+		glob*o=new glob(wd,pt(),pt(),s,1,0,vbomonkey::inst);
+		o->dpos(pt(),pt(0,0,1));
 //		o->bits|=1;
-		new objdots();
+
+//		glob*oo=new objobj();
+//		oo->radius(s);
+//		oo->setscl(pt(s,s,s));
 
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
