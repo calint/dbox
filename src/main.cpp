@@ -589,6 +589,7 @@ namespace dbox{
 		GLsizei nind;
 		texture txp;
 	public:
+		virtual void init(){}
 		vbo():glva(0),glvib(0),glvb(0),nind(0){}
 		virtual~vbo(){}
 		virtual inline const char*name()const{return "vbo";}
@@ -623,13 +624,14 @@ namespace dbox{
 //		virtual inline const char*teximgpath()const{return "sprite0.png";}
 		virtual inline const char*teximgpath()const{return 0;}
 		void glload(){
+			init();
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error state");
 			const int stride=9;//xyz,rgba,st
 			const int sizeofnum=sizeof(float);//sizeof(float)
 			const int stridebytes=stride*sizeofnum;
 
-			const int nv=nvertices();
 			cout<<name()<<endl;
+			const int nv=nvertices();
 			cout<<"  "<<nv<<" vertices, "<<stridebytes<<" B/vertex"<<endl;
 			float*vb=new float[nv*stride];
 			vertices(vb);
@@ -1995,25 +1997,28 @@ using namespace dbox;
 #include <fstream>
 namespace app{
 	class vboobj:public vbo{
+		int nverts=0;
+	public:
+		vboobj():nverts(0){}
 		virtual inline const char*name()const{return "vboobj";}
 		virtual inline const char*objfilepath()const{return "untitled0.obj";}
 		inline int elemtype()const{return 5;}
-		inline int nvertices()const{//? filescannedtwice
+		void init(){
 			string line;
 			ifstream infile(objfilepath());
 			if(!infile.is_open())throw signl(1,objfilepath());
-			int nverts=0;
+			cout<<"  "<<objfilepath()<<endl;
 			while(getline(infile,line)){
-				if(line.at(0)=='v')
+				if(line.at(0)=='v'){
 					nverts++;
+				}
 			}
-			return nverts;
 		}
+		int nvertices()const{return nverts;}
 		virtual GLsizei nindices(){return 0;}
 		virtual void vertices(float fa[])const{
 			string line;
 			ifstream infile(objfilepath());
-			cout<<"  "<<objfilepath()<<endl;
 			int nverts=0;
 			int j=0;
 			while(getline(infile,line)){
