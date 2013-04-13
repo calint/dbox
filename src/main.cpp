@@ -2299,12 +2299,12 @@ namespace app{
 		vbosprite::inst.glload();
 
 		glob*o=new glob(wd,pt(),pt(),1,1,0,vbos::spritexy::inst);
-		o->dpos(pt(),pt(0,0,10));
+		o->dpos(pt(),pt(0,0,1));
 //		new objdots();
 
 		wn=new windo();
 		wn->pos(pt(0,0,1),pt());
-		wn->dpos(pt(0,0,-.01f),pt());
+		wn->dpos(pt(0,0,-.01f),pt(0,0,1));
 
 		dbox::run();
 	}
