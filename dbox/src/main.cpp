@@ -18,13 +18,13 @@ using namespace std;
 namespace dbox{
 	#define flf()l("···",__FILE__,__LINE__,__FUNCTION__);
 	static inline ostream&l(const char*s="",const char*file="",int lineno=0,const char*func=""){cerr<<file;if(lineno){cerr<<":"<<lineno;}cerr<<" "<<func<<"  "<<s;return cerr;}
-	namespace clk{
+	struct clk{
 		int fps=120;
 		int dtms=1000/fps;
 		float dt=dtms/1000.f;
-		long long tk=0;
-	}
-	namespace metrics{
+		long tk=0;
+	}clk;
+	struct metrics{
 		int globs;
 		int coldetsph;
 		int frames;
@@ -47,8 +47,8 @@ namespace dbox{
 		int gridsculled;
 		int gridsrend;
 		float dtgrdput;
-	}
-	inline float dt(const float f=1){return f*clk::dt;}
+	}metrics;
+	inline float dt(const float f=1){return f*clk.dt;}
 	inline float rnd(const float from,const float tonotincluding){return from+(tonotincluding-from)*rand()/RAND_MAX;}
 	inline float rndo(const float tonotincluding){return tonotincluding*rand()/RAND_MAX;}
 	inline float rndn(const float s){return rnd(-s,s);}
@@ -86,7 +86,7 @@ namespace dbox{
 		inline const char* str()const{return s;}
 	};
 
-	namespace shader{
+	struct shader{
 		GLuint prog=0;
 		GLint umxmw=0;
 		GLint umxwv=0;
@@ -153,8 +153,8 @@ namespace dbox{
 
 			if(glGetError())throw signl(0,"shader::init");
 		}
-	}
-	namespace net{
+	}shader;
+	struct net{
 		const int nplayers=2;
 		const int nkeys=32;
 		const int keyslen=nplayers*nkeys;
@@ -163,37 +163,40 @@ namespace dbox{
 	//	const char*playername="noname";
 		bool sockio=false;
 
-		char keys[nplayers][nkeys];
+		char*keys;//[nplayers][nkeys];
 		int player=0;
 		int sockfd=0;
 		struct addrinfo*ai=0;
 		void sendkeys(){
-			const ssize_t bytes_sent=send(sockfd,keys[player],nkeys,0);
+			const ssize_t bytes_sent=send(sockfd,keys+nkeys*player,(size_t)nkeys,0);
 			//flf();l("sent keys for player ")<<player<<"  bytessent("<<bytes_sent<<endl;
 			if(bytes_sent==-1){flf();l(strerror(errno))<<endl;throw signl(1,"sendkeys");}
 		}
 		void print(){
-			cout<<hex;
-			for(int i=0;i<nplayers;i++){
-				cout<<"k["<<i<<"](";
-				for(int j=0;j<nkeys;j++){
-					if(j>0)cout<<" ";
-					cout<<int(keys[i][j]);
-				}
-				cout<<")"<<endl;
-			}
+//			cout<<hex;
+//			for(int i=0;i<nplayers;i++){
+//				cout<<"k["<<i<<"](";
+//				for(int j=0;j<nkeys;j++){
+//					if(j>0)cout<<" ";
+//					cout<<int(keys[i][j]);
+//				}
+//				cout<<")"<<endl;
+//			}
 
 		}
 		void reckeys(){
-			const ssize_t reclen=recv(sockfd,keys,keyslen,0);
+			const ssize_t reclen=recv(sockfd,keys,(size_t)keyslen,0);
 			if(reclen==0){flf();l("closed")<<endl;exit(1);}
 			if(reclen==-1){flf();l(strerror(errno))<<endl;exit(2);}
 			if(reclen!=keyslen)throw signl(3,"uncompleterec");//?
 	//		print();
 		}
+		void init0(){
+			keys=new char[keyslen];
+			memset(keys,0,(size_t)keyslen);
+		}//? leak
 		void init(){
 			flf();l()<<"connect "<<host<<":"<<port<<endl;
-
 			struct addrinfo hints;
 			memset(&hints,0,sizeof hints);
 			hints.ai_family=AF_UNSPEC;
@@ -213,9 +216,9 @@ namespace dbox{
 			playerid[32]=0;
 			flf();cout<<"  keys:"<<sizeof keys<<"\n";
 			flf();cout<<"  player id: "<<playerid<<"\n";
-			memset(keys,0,sizeof keys);
+			memset(keys,0,(size_t)keyslen);
 			if(!sockio){
-				strncpy(keys[player],playerid,nkeys);
+				strncpy(keys+player*nkeys,playerid,(size_t)nkeys);
 			}else{//?
 				string s="get /gloxnet .\r\ncookie:i=";
 				s.append(playerid).append("\r\n\r\n");
@@ -233,33 +236,31 @@ namespace dbox{
 			flf();l("waiting for other players.")<<endl;
 			reckeys();
 			flf();l("all players connected.")<<endl;
-			int i=0;
-			for(auto s:keys){
-				if(!strcmp(playerid,s)){
+			for(int i=0;i<nplayers;i++){
+				if(!strcmp(playerid,keys+i*nkeys)){//? compare 32 bytes
 					player=i;
 					break;
 				}
-				i++;
 			}
 			flf();l("u r player #")<<player<<endl;
 			print();
-			memset(keys,0,sizeof keys);
+			memset(keys,0,(size_t)keyslen);
 		}
 		//	void stop(){
 		//		if(sockfd&&close(sockfd)){flf();l(strerror(errno))<<endl;}
 		//		if(ai)freeaddrinfo(ai);
 		//	}
-	}
+	}net;
 
 	class pt{
 		float x,y,z;
 	public:
-		inline pt():x(0),y(0),z(0){metrics::p3s++;}
-		inline pt(const pt&p){metrics::p3s++;x=p.x;y=p.y;z=p.z;}
-		inline pt(const float x,const float y,const float z):x(x),y(y),z(z){metrics::p3s++;}
-		inline pt(const pt&from,const pt&to):x(to.x-from.x),y(to.y-from.y),z(to.z-from.z){metrics::p3s++;}
-		inline pt(const pt&from,const pt&to,const float len):x(to.x-from.x),y(to.y-from.y),z(to.z-from.z){metrics::p3s++;norm(len);}
-		inline ~pt(){metrics::p3s--;}
+		inline pt():x(0),y(0),z(0){metrics.p3s++;}
+		inline pt(const pt&p){metrics.p3s++;x=p.x;y=p.y;z=p.z;}
+		inline pt(const float x,const float y,const float z):x(x),y(y),z(z){metrics.p3s++;}
+		inline pt(const pt&from,const pt&to):x(to.x-from.x),y(to.y-from.y),z(to.z-from.z){metrics.p3s++;}
+		inline pt(const pt&from,const pt&to,const float len):x(to.x-from.x),y(to.y-from.y),z(to.z-from.z){metrics.p3s++;norm(len);}
+		inline ~pt(){metrics.p3s--;}
 		inline float getx()const{return x;}
 		inline pt&setx(const float f){x=f;return*this;}
 		inline float gety()const{return y;}
@@ -307,10 +308,10 @@ namespace dbox{
 			 m[8]=zx; m[9]=zy;m[10]=zz;m[11]=zo;
 			m[12]=ox;m[13]=oy;m[14]=oz;m[15]=oo;
 		}
-		inline mtx(){metrics::m3s++;ident();}
-		inline mtx(const pt&p,const pt&a){metrics::m3s++;mw(p,a);}
-	//	inline m3(const GLfloat*m){metrics::m3s++;set(m);}
-		inline ~mtx(){metrics::m3s--;}
+		inline mtx(){metrics.m3s++;ident();}
+		inline mtx(const pt&p,const pt&a){metrics.m3s++;mw(p,a);}
+	//	inline m3(const GLfloat*m){metrics.m3s++;set(m);}
+		inline ~mtx(){metrics.m3s--;}
 		inline pt xaxis()const{return pt(xx,xy,xz);}
 		inline pt yaxis()const{return pt(yx,yy,yz);}
 		inline pt zaxis()const{return pt(zx,zy,zz);}
@@ -340,7 +341,7 @@ namespace dbox{
 			return*this;
 		}
 		const mtx&trnsf(const pt&src,pt&dst)const{
-			metrics::mpmul++;
+			metrics.mpmul++;
 			const float x=src.getx();
 			const float y=src.gety();
 			const float z=src.getz();
@@ -358,7 +359,7 @@ namespace dbox{
 	//		return*this;
 	//	}
 		mtx&mul(const mtx&m){
-			metrics::mmmul++;
+			metrics.mmmul++;
 			const float nxx=m.xx*xx+m.yx*xy+m.zx*xz+m.ox*xo;
 			const float nyx=m.xx*yx+m.yx*yy+m.zx*yz+m.ox*yo;
 			const float nzx=m.xx*zx+m.yx*zy+m.zx*zz+m.ox*zo;
@@ -387,7 +388,7 @@ namespace dbox{
 			return*this;
 		}
 		mtx&mul2(const mtx&m){
-			metrics::mmmul++;
+			metrics.mmmul++;
 			float nxx=xx*m.xx+yx*m.xy+zx*m.xz+ox*m.xo;
 			float nyx=xx*m.yx+yx*m.yy+zx*m.yz+ox*m.yo;
 			float nzx=xx*m.zx+yx*m.zy+zx*m.zz+ox*m.zo;
@@ -628,7 +629,7 @@ namespace dbox{
 				glEnableVertexAttribArray(2);
 				glActiveTexture(GL_TEXTURE2);
 				glBindTexture(GL_TEXTURE_2D,1);
-				glUniform1i(shader::utx,2);
+				glUniform1i(shader.utx,2);
 
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glvib);//? only for elem ops
@@ -675,8 +676,8 @@ namespace dbox{
 		static vbo inst;
 	};
 	vbo vbo::inst;
-
-	class vboaxis:public vbo{
+namespace vbos{
+	class axis:public vbo{
 	public:
 		inline const char*name()const{return "vboaxis";}
 		inline int elemtype()const{return 6;}
@@ -709,11 +710,11 @@ namespace dbox{
 			fa[j++]=0;fa[j++]=0;fa[j++]=1;fa[j++]=1;//rgba
 			fa[j++]=0;fa[j++]=0;//st
 		}
-		static vboaxis inst;
+		static axis inst;
 	};
-	vboaxis vboaxis::inst;
+	axis axis::inst;
 
-	class vbocirclexy:public vbo{
+	class circlexy:public vbo{
 	public:
 		inline const char*name()const{return "vbocirclexy";}
 		inline int elemtype()const{return 7;}
@@ -732,18 +733,18 @@ namespace dbox{
 				fa[j++]=c;fa[j++]=s;//st
 			}
 		}
-		static vbocirclexy inst;
+		static circlexy inst;
 	};
-	vbocirclexy vbocirclexy::inst;
+	circlexy circlexy::inst;
 
-	class vbosquarexy:public vbo{
+	class squarexy:public vbo{
 	public:
 		inline const char*name()const{return "vbosquarexy";}
 		inline int elemtype()const{return 7;}
-		static vbosquarexy inst;
+		static squarexy inst;
 	};
-	vbosquarexy vbosquarexy::inst;
-
+	squarexy squarexy::inst;
+}
 	class glob:public pt{
 		const int id;
 		glob&g;
@@ -754,8 +755,8 @@ namespace dbox{
 		list<glob*>chsadd;
 		int bits;
 	private:
-		long long ptmxupdtk;
-		long long mxmwtk;
+		long ptmxupdtk;
+		long mxmwtk;
 		mtx mxmw;
 		pt mxmwpos;
 		pt mxmwagl;
@@ -765,8 +766,8 @@ namespace dbox{
 		pt dd;
 		float bf;
 		float m=1;
-		long long tk;
-		long long culldrawtk;
+		long tk;
+		long culldrawtk;
 	protected:
 		pt d;
 		pt da;
@@ -792,7 +793,7 @@ namespace dbox{
 		inline glob&setscl(const pt&s){scl.set(s);return*this;}
 
 		glob(glob&g,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=.5f,vbo&vb=*(vbo*)0):
-			pt(p),id(metrics::globs++),g(g),a(a),bits(1),ptmxupdtk(-1),mxmwtk(0),rmed(false),
+			pt(p),id(metrics.globs++),g(g),a(a),bits(1),ptmxupdtk(-1),mxmwtk(0),rmed(false),
 			 r(r),bf(bounciness),m(density_gcm3*4/3*pi*r*r*r),
 			 tk(0),culldrawtk(0),d(pt()),da(pt()),f(pt()),fi(pt()),pp(p),ppsaved(false),
 			 vb(&vb),scl(r,r,r),
@@ -802,7 +803,7 @@ namespace dbox{
 			g.chsadd.push_back(this);
 		}
 		virtual~glob(){
-			metrics::globs--;
+			metrics.globs--;
 			for(auto g:chs)
 				delete g;
 			chs.clear();
@@ -815,7 +816,7 @@ namespace dbox{
 			rmed=true;g.chsrm.push_back(this);
 		}
 		void coldet(glob&o){
-			metrics::coldetsph++;
+			metrics.coldetsph++;
 			const pt wpthis=g.posinwcs(*this);
 			const pt wpo=o.g.posinwcs(o);
 			const pt v(wpthis,wpo);
@@ -846,30 +847,30 @@ namespace dbox{
 			}
 		}
 		void culldraw(const bvol&bv){
-			if(culldrawtk==clk::tk){
+			if(culldrawtk==clk.tk){
 //				flf();l("double rend");
 				return;
 			}
-			culldrawtk=clk::tk;
+			culldrawtk=clk.tk;
 
 			const float r=radius();
 			const int cull=bv.cull(*this,r);
 			if(cull){
-				metrics::viewcull++;
+				metrics.viewcull++;
 				return;
 			}
-			metrics::globsrend++;
+			metrics.globsrend++;
 //			if(drawboundingspheres)drawboundingsphere();
 			gldraw();
 			for(auto g:chs)
 				g->culldraw(bv);
 		}
 		void dotck(){
-			if(tk==clk::tk){
+			if(tk==clk.tk){
 				flf();l("same tk");
 				return;
 			}
-			tk=clk::tk;
+			tk=clk.tk;
 			tick();
 		}
 		virtual void tick(){
@@ -901,12 +902,12 @@ namespace dbox{
 			if(vb||drawaxis){
 				GLfloat mx[16];
 				getmxmw().togl(mx);
-				glUniformMatrix4fv(shader::umxmw,1,false,mx);
+				glUniformMatrix4fv(shader.umxmw,1,false,mx);
 			}
 			if(vb)
 				vb->gldraw();
 			if(drawaxis)
-				vboaxis::inst.gldraw();
+				vbos::axis::inst.gldraw();
 			if(drawboundingspheres){
 				const pt pos=posinwcs(pt());
 //				flf();l()<<pos<<"   "<<r<<endl;
@@ -914,8 +915,8 @@ namespace dbox{
 				mtx mw;
 				mw.setsclagltrans(pt(r,r,r),pt(),pos);
 				mw.togl(mx);
-				glUniformMatrix4fv(shader::umxmw,1,false,mx);
-				vbocirclexy::inst.gldraw();
+				glUniformMatrix4fv(shader.umxmw,1,false,mx);
+				vbos::circlexy::inst.gldraw();
 			}
 			for(auto g:chs)g->gldraw();
 		};
@@ -954,7 +955,7 @@ namespace dbox{
 			return true;
 		}
 		virtual bool oncol(glob&o){//? defunc
-			metrics::collisions++;
+			metrics.collisions++;
 			//flf();l()<<typeid(*this).name()<<"["<<this->getid()<<"]"<<endl;
 			if(!o.issolid())return true;
 			const pt&p1=*this;
@@ -1017,7 +1018,7 @@ namespace dbox{
 				if(mxmwpos==*this&&mxmwagl==a&&mxmwscl==getscl())
 					return;
 			}
-			metrics::mwrfsh++;
+			metrics.mwrfsh++;
 			mxmwagl=a;
 			mxmwpos=*this;
 			mxmwscl=scl;
@@ -1030,7 +1031,7 @@ namespace dbox{
 //			mxmw=g.mxmw;
 //			mxmw.mul2(mtx(mxmwpos,mxmwagl));//? cache
 
-			mxmwtk=clk::tk;
+			mxmwtk=clk.tk;
 			ptmxupdtk=g.mxmwtk;
 			return;
 		}
@@ -1052,10 +1053,10 @@ namespace dbox{
 			po(p),s(size)
 //			,grds({0,0,0,0,0,0,0,0})
 		{
-			metrics::ngrids++;
+			metrics.ngrids++;
 			memset(grds,0,sizeof(grds));
 		}
-		~grid(){metrics::ngrids--;clear();}
+		~grid(){metrics.ngrids--;clear();}
 		void tick(){
 			for(auto g:ls)
 				g->dotck();
@@ -1071,8 +1072,8 @@ namespace dbox{
 			mtx mw;
 			mw.setsclagltrans(pt(s,s,s),pt(),po);
 			mw.togl(mx);
-			glUniformMatrix4fv(shader::umxmw,1,false,mx);
-			vbosquarexy::inst.gldraw();
+			glUniformMatrix4fv(shader.umxmw,1,false,mx);
+			vbos::squarexy::inst.gldraw();
 			//? sphere in viewpyr check
 	//		const GLbyte c=(GLbyte)(po.gety()/15*127);
 	//		glColor3b(0,0,c);
@@ -1129,10 +1130,10 @@ namespace dbox{
 		void culldraw(const bvol&bv){
 			const int c=bv.cull(po,s*1.41f);//? radius
 			if(c){
-				metrics::gridsculled++;
+				metrics.gridsculled++;
 				return;
 			}
-			metrics::gridsrend++;
+			metrics.gridsrend++;
 			for(auto g:ls){
 				g->culldraw(bv);
 			}
@@ -1276,18 +1277,18 @@ namespace dbox{
 //			for(auto g:chs)g->dotck();
 //			for(auto g:chsrm){chs.remove(g);delete g;}
 
-	//		metrics::dtupd=clk::timerdt();
+	//		metrics.dtupd=clk::timerdt();
 
 	//		clk::timerrestart();
 			t+=dt();
 			tmr t;
 			grd.clear();
 			grd.addall(chls());
-			metrics::dtgrdput=t.dt();
+			metrics.dtgrdput=t.dt();
 			if(coldetgrid){
 				grd.coldet();
 			}
-			metrics::dtcoldetgrd=t.dt();
+			metrics.dtcoldetgrd=t.dt();
 
 	//		clk::timerrestart();
 			if(coldetbrute){
@@ -1305,7 +1306,7 @@ namespace dbox{
 					i1++;
 				}
 			}
-	//		metrics::dtcoldetbrute=clk::timerdt();
+	//		metrics.dtcoldetbrute=clk::timerdt();
 		}
 	};
 	static wold wd;
@@ -1414,30 +1415,30 @@ namespace dbox{
 		bool hdlkeydn(const char key){
 			const int i=keyix(key);
 			if(!i)return false;
-			const int s=net::keys[player][i];
+			const int s=net.keys[player*net.nkeys+i];
 			if(s==0)return false;
 			if(s==2)return true;
 			if(s!=1)throw signl(2,"unknownstate");
-			net::keys[player][i]=2;
+			net.keys[player*net.nkeys+i]=2;
 			return true;
 		}
 		bool hdlkeytg(const char key){
 			const int i=keyix(key);
 			if(!i)return false;
-			const int s=net::keys[player][i];
+			const int s=net.keys[player*net.nkeys+i];
 			if(s==0)return false;
 			if(s==2)return false;
 			if(s!=1)return false;
-			net::keys[player][i]=2;
+			net.keys[player*net.nkeys+i]=2;
 			return true;
 		}
 	private:
 		void keydn(const int key,const int x=0,const int y=0){
 			const int i=keyix(key);
 			if(!i)return;
-			const int s=net::keys[player][i];
+			const int s=net.keys[player*net.nkeys+i];
 			if(s==1)return;
-			net::keys[player][i]=1;
+			net.keys[player*net.nkeys+i]=1;
 			static int xx,yy;
 			xx=x;yy=y;
 //			cout<<"keydn("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
@@ -1445,11 +1446,11 @@ namespace dbox{
 		}
 		void keyup(const int key,const int x=0,const int y=0){
 			const int i=keyix(key);
-			const int s=net::keys[player][i];
+			const int s=net.keys[player*net.nkeys+i];
 			if(s==0)return;
 			if(s==1)return;
 			if(s!=2)throw signl(2,"unknownstate");
-			net::keys[player][i]=0;
+			net.keys[player*net.nkeys+i]=0;
 			static int xx,yy;
 			xx=x;yy=y;
 //			cout<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
@@ -1534,8 +1535,8 @@ namespace dbox{
 			mwv.wv(*this,agl());//? cache
 			GLfloat mx[16];
 			mwv.togl(mx);
-			glUniformMatrix4fv(shader::umxwv,1,false,mx);
-			glUniform1i(shader::udopersp,dopersp);
+			glUniformMatrix4fv(shader.umxwv,1,false,mx);
+			glUniform1i(shader.udopersp,dopersp);
 			const bvol bv(0,0);
 //			wd.culldraw(bv);
 			wd.grd.culldraw(bv);
@@ -1545,7 +1546,7 @@ namespace dbox{
 	//	void drawframe(){
 	//		const float freq=drawtmr.dt();
 	//		drawtmr.restart();
-	//		cout<<"\nframe("<<metrics::frames++<<") last frame dt="<<freq<<" s  fps ~"<<1/freq;
+	//		cout<<"\nframe("<<metrics.frames++<<") last frame dt="<<freq<<" s  fps ~"<<1/freq;
 	//		clk::timerrestart();
 	//		const GLfloat lhtpos[]={getx(),gety()+radius()*2,getz(),1};
 	////		GLfloat mflhtproj[16];
@@ -1676,12 +1677,12 @@ namespace dbox{
 	//		p3 btmplanenml(*this,p3());
 	//		btmplanenml.vecprod(pbl,pbr).norm();
 	//		const p3n btmplane(*this,btmplanenml);
-	//		metrics::viewcull=metrics::globsrend=metrics::gridsculled=metrics::gridsrend=0;
+	//		metrics.viewcull=metrics.globsrend=metrics.gridsculled=metrics.gridsrend=0;
 	//		const p3n cullplanes[]{backplane,rightplane,leftplane,topplane,btmplane};
 	//		const bvol bv(5,cullplanes);
 	//		wold::get().gldraw();//? yisculled?
 	//		wold::get().grd.culldraw(bv);//. rendleftrighti
-	//		metrics::dtrend=clk::timerdt();
+	//		metrics.dtrend=clk::timerdt();
 	//		if(dodrawhud){
 	//			glMatrixMode(GL_MODELVIEW);
 	//			glLoadIdentity();
@@ -1736,7 +1737,7 @@ namespace dbox{
 		}
 		void fire(){
 			const float r=.01f;
-			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbocirclexy::inst);
+			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbos::circlexy::inst);
 			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
 
 //			nd.set(getmxv().zaxis().neg().scale(dt()));
@@ -1786,31 +1787,31 @@ namespace dbox{
 
 			oss.str("");
 	//		oss<<setprecision(2);
-			oss<<"frame("<<metrics::frames<<") globs("<<metrics::globs<<") p3s("<<metrics::p3s<<") m3s("<<metrics::m3s<<") rays("<<metrics::rays<<")";
+			oss<<"frame("<<metrics.frames<<") globs("<<metrics.globs<<") p3s("<<metrics.p3s<<") m3s("<<metrics.m3s<<") rays("<<metrics.rays<<")";
 	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
 
 			oss.str("");
 	//		oss<<setprecision(4);
-			oss<<"upd("<<metrics::dtupd<<")s rayone("<<metrics::rayone<<")s draw("<<metrics::dtrend<<")s    "<<((int)(metrics::globs/(metrics::dtrend?metrics::dtrend:1))>>10)<<"Kglobs/s    rendfpsest("<<(1/(metrics::dtrend+metrics::dtupd+metrics::dtcoldetgrd))<<")f/s";
+			oss<<"upd("<<metrics.dtupd<<")s rayone("<<metrics.rayone<<")s draw("<<metrics.dtrend<<")s    "<<((int)(metrics.globs/(metrics.dtrend?metrics.dtrend:1))>>10)<<"Kglobs/s    rendfpsest("<<(1/(metrics.dtrend+metrics.dtupd+metrics.dtcoldetgrd))<<")f/s";
 	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
 
 			oss.str("");
 	//		oss<<setprecision(4);
-//			oss<<"coldet("<<(wold::get().coldetgrid?"grid":"")<<" "<<(wold::get().coldetbrute?"brute":"")<<") ngrids("<<metrics::ngrids<<") grid("<<metrics::dtcoldetgrd<<")s  "<<(((long long int)(metrics::globs/(wold::get().coldetgrid?metrics::dtcoldetgrd:metrics::dtcoldetbrute)))>>10)<<"Kglobs/s   brutedt("<<metrics::dtcoldetbrute<<")s";
+//			oss<<"coldet("<<(wold::get().coldetgrid?"grid":"")<<" "<<(wold::get().coldetbrute?"brute":"")<<") ngrids("<<metrics.ngrids<<") grid("<<metrics.dtcoldetgrd<<")s  "<<(((long long int)(metrics.globs/(wold::get().coldetgrid?metrics.dtcoldetgrd:metrics.dtcoldetbrute)))>>10)<<"Kglobs/s   brutedt("<<metrics.dtcoldetbrute<<")s";
 	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
 
 			oss.str("");
-			oss<<"sphcolsdet("<<metrics::coldetsph<<") sphcols("<<metrics::collisions<<")"<<" mxrfsh("<<metrics::mwrfsh<<")"<<" mvmul("<<metrics::mpmul<<") mmmul("<<metrics::mmmul<<") ";
-	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
-
-			oss.str("");
-	//		oss<<setprecision(4);
-			oss<<"gridscull("<<metrics::gridsculled<<") gridsrend("<<metrics::gridsrend<<") cullview("<<metrics::viewcull<<") globstorend("<<metrics::globsrend<<")";
+			oss<<"sphcolsdet("<<metrics.coldetsph<<") sphcols("<<metrics.collisions<<")"<<" mxrfsh("<<metrics.mwrfsh<<")"<<" mvmul("<<metrics.mpmul<<") mmmul("<<metrics.mmmul<<") ";
 	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
 
 			oss.str("");
 	//		oss<<setprecision(4);
-			oss<<"player("<<getplayer()<<") dtnet("<<metrics::dtnet<<")";
+			oss<<"gridscull("<<metrics.gridsculled<<") gridsrend("<<metrics.gridsrend<<") cullview("<<metrics.viewcull<<") globstorend("<<metrics.globsrend<<")";
+	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
+
+			oss.str("");
+	//		oss<<setprecision(4);
+			oss<<"player("<<getplayer()<<") dtnet("<<metrics.dtnet<<")";
 	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
 
 			oss.str("");
@@ -1848,31 +1849,40 @@ namespace dbox{
 		cout<<"reray"<<endl;
 		cout<<"   opengl: "<<glGetString(GL_VERSION)<<endl;
 	//	printf("sizeofs\n");
-		shader::init();
+		shader.init();
 
 //		glEnable(GL_LINE_SMOOTH);
 //		glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
 		if(glGetError()!=GL_NO_ERROR)throw signl(1,"opengl is in error state");
+		printf(": %8s : %-4lu :\n","bool",sizeof(bool));
+		printf(": %8s : %-4lu :\n","char",sizeof(char));
+		printf(": %8s : %-4lu :\n","int",sizeof(int));
+		printf(": %8s : %-4lu :\n","float",sizeof(float));
+		printf(": %8s : %-4lu :\n","double",sizeof(double));
+		printf(": %8s : %-4lu :\n","long",sizeof(long));
+		printf(": %8s : %-4lu :\n","long long int",sizeof(long long));
 		printf(": %8s : %-4lu :\n","pt",sizeof(pt));
 		printf(": %8s : %-4lu :\n","mtx",sizeof(mtx));
 		printf(": %8s : %-4lu :\n","bvol",sizeof(bvol));
 		printf(": %8s : %-4lu :\n","glob",sizeof(glob));
+		printf(": %8s : %-4lu :\n","vbo",sizeof(vbo));
+//		printf(": %8s : %-4lu :\n","dbox",sizeof(dbox));
 
 		vbo::inst.glload();
-		vboaxis::inst.glload();
-		vbocirclexy::inst.glload();
-		vbosquarexy::inst.glload();
+		vbos::axis::inst.glload();
+		vbos::circlexy::inst.glload();
+		vbos::squarexy::inst.glload();
 	}
 
 	void run(){
-		long long frm=0;
+		long frm=0;
 		tmr t,t1,t2;
 		printf(": %5s : %5s : %5s : %4s : %5s : %5s : %5s : %5s : %5s : %8s : %8s : %8s : %8s : %8s : %8s :\n","frame","globs","rend","fps","grids","cull","chk","cols","mxmul","dtdrw","dttck","dtswp","dt","dtgrdpt","dtcoldet");
 	//	cout<<"frame"<<" "<<"dt      "<<" "<<"dt     "<<" "<<"globs"<<" "<<"globsrend"<<"\n";
 		while(glfwGetWindowParam(GLFW_OPENED)){
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error");
 			frm++;
-			clk::tk++;
+			clk.tk++;
 			tmr t3;
 			if(wn)
 				wn->drawframe();
@@ -1884,11 +1894,11 @@ namespace dbox{
 			if(wn)
 				glfwSwapBuffers();
 			const float swapbufsdt=t3.dt();
-			clk::dt=t.dt();
-			clk::fps=(int)(1/clk::dt);
-			printf(": %5lld : %5d : %5d : %4d : %5d : %5d : %5d : %5d : %5d : %8f : %8f : %8f : %8f : %8f : %8f :\r",frm,metrics::globs,metrics::globsrend,clk::fps,metrics::ngrids,metrics::gridsculled,metrics::coldetsph,metrics::collisions,metrics::mmmul,
-					drawframedt,tickdt,swapbufsdt,clk::dt,metrics::dtgrdput,metrics::dtcoldetgrd);
-			metrics::globsrend=metrics::mmmul=metrics::gridsculled=metrics::coldetsph=metrics::collisions=0;
+			clk.dt=t.dt();//? clk.set(t.dt())
+			clk.fps=(int)(1/clk.dt);
+			printf(": %5ld : %5d : %5d : %4d : %5d : %5d : %5d : %5d : %5d : %8f : %8f : %8f : %8f : %8f : %8f :\r",frm,metrics.globs,metrics.globsrend,clk.fps,metrics.ngrids,metrics.gridsculled,metrics.coldetsph,metrics.collisions,metrics.mmmul,
+					drawframedt,tickdt,swapbufsdt,clk.dt,metrics.dtgrdput,metrics.dtcoldetgrd);
+			metrics.globsrend=metrics.mmmul=metrics.gridsculled=metrics.coldetsph=metrics.collisions=0;
 		}
 		cout<<endl<<frm/t1.dt()<<endl;
 	}
@@ -2058,12 +2068,13 @@ namespace app{
 		while(argc--)puts(*argv++);
 
 		dbox::init();
+		net.init0();
 		if(argc>1){
-			dbox::net::host=argv[1];
+			dbox::net.host=argv[1];
 			if(argc>2){
-				dbox::net::port=argv[2];
+				dbox::net.port=argv[2];
 			}
-			dbox::net::init();
+			dbox::net.init();
 		}
 		app::vbodots::inst.glload();
 
