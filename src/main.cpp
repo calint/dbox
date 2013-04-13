@@ -515,10 +515,10 @@ namespace dbox{
 
 	//#include<png.h>
 	void loadfilepng(const char*path,unsigned int&wi,unsigned int&hi,unsigned char*&rgba){
+		FILE *fp;
+		if((fp=fopen(path,"rb"))==NULL)signl(1,path);//? leak png,pnginfo
 		png_structp png=png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
 		png_infop pnginfo=png_create_info_struct(png);
-		FILE *fp;
-		if((fp=fopen(path,"rb"))==NULL)signl(4,path);
 		png_init_io(png,fp);
 		//PNG_TRANSFORM_STRIP_16 PNG_TRANSFORM_PACKING PNG_TRANSFORM_EXPAND
 		png_read_png(png,pnginfo,0,NULL);
@@ -741,7 +741,7 @@ namespace dbox{
 namespace vbos{
 	class axis:public vbo{
 	public:
-		inline const char*name()const{return "vboaxis";}
+		inline const char*name()const{return "axis";}
 		inline int elemtype()const{return 6;}
 		inline int nvertices()const{return 6;}
 		inline GLsizei nindices(){return 0;}
@@ -778,7 +778,7 @@ namespace vbos{
 
 	class circlexy:public vbo{
 	public:
-		inline const char*name()const{return "vbocirclexy";}
+		inline const char*name()const{return "circlexy";}
 		inline int elemtype()const{return 7;}
 		inline int nvertices()const{return 32;}
 		inline GLsizei nindices(){return 0;}
@@ -801,7 +801,7 @@ namespace vbos{
 
 	class squarexy:public vbo{
 	public:
-		inline const char*name()const{return "vbosquarexy";}
+		inline const char*name()const{return "squarexy";}
 		inline int elemtype()const{return 7;}
 		static squarexy inst;
 	};
@@ -1293,7 +1293,7 @@ namespace vbos{
 			hidezplane(false),
 			coldetbrute(false),
 			coldetgrid(true)
-		{}
+		{bits|=1;}
 		grid grd;
 //		keyb*kb;
 		bool drawaxis,drawgrid,hidezplane,coldetbrute,coldetgrid;
@@ -1824,8 +1824,10 @@ namespace vbos{
 		}
 		void fire(){
 			const float r=.01f;
-			glob*g=new glob(wd,pt(rnd(-1,1),rnd(-1,1),.25f),pt(),r,1,0,vbos::spritexy::inst);
-			g->dpos(pt(0,0,0),pt(0,0,rnd(-180,180)));
+			const float s=.5f;
+			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),.25f),pt(),r,1,0,vbos::spritexy::inst);
+			const float d=.05f;
+			g->dpos(pt(rnd(-d,d),rnd(-d,d),0),pt(0,0,rnd(-180,180)));
 
 //			nd.set(getmxv().zaxis().neg().scale(dt()));
 	////		firereload+=dt(60);if(firereload>1)firereload=1;
@@ -2068,8 +2070,8 @@ namespace app{
 		vbodots::inst.glload();
 		vbosprite::inst.glload();
 
-		glob*o=new glob(wd,pt(),pt(),1,1,0,vbos::spritexy::inst);
-		o->dpos(pt(),pt(0,0,1));
+//		glob*o=new glob(wd,pt(),pt(),1,1,0,vbos::spritexy::inst);
+//		o->dpos(pt(),pt(0,0,1));
 //		new objdots();
 
 		wn=new windo();
