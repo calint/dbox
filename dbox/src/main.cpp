@@ -624,13 +624,13 @@ namespace dbox{
 //		virtual inline const char*teximgpath()const{return "sprite0.png";}
 		virtual inline const char*teximgpath()const{return 0;}
 		void glload(){
+			cout<<name()<<endl;
 			init();
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error state");
 			const int stride=9;//xyz,rgba,st
 			const int sizeofnum=sizeof(float);//sizeof(float)
 			const int stridebytes=stride*sizeofnum;
 
-			cout<<name()<<endl;
 			const int nv=nvertices();
 			cout<<"  "<<nv<<" vertices, "<<stridebytes<<" B/vertex"<<endl;
 			float*vb=new float[nv*stride];
