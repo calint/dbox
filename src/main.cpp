@@ -72,7 +72,7 @@ namespace dbox{
 			t0=tv;
 			return (float)diff_s+diff_us/1000000.f;
 		}
-	};
+	}tmr_;
 	class signl{
 		const int i;
 		const char*s;
@@ -643,7 +643,7 @@ namespace dbox{
 		GLsizei nind;
 		texture txp;
 	public:
-		virtual void init(){}
+		virtual void init0(){}
 		vbo():glva(0),glvib(0),glvb(0),nind(0){}
 		virtual~vbo(){}
 		virtual inline const char*name()const{return "vbo";}
@@ -679,7 +679,7 @@ namespace dbox{
 		virtual inline const char*teximgpath()const{return 0;}
 		void glload(){
 			cout<<name()<<endl;
-			init();
+			init0();
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error state");
 			const int stride=9;//xyz,rgba,st
 			const int sizeofnum=sizeof(float);//sizeof(float)
@@ -782,9 +782,7 @@ namespace dbox{
 			default:throw signl(0,"unknown elemtype");
 			}
 		}
-		static vbo inst;
-	};
-	vbo vbo::inst;
+	}vbo_;
 namespace vbos{
 	class axis:public vbo{
 	public:
@@ -819,9 +817,7 @@ namespace vbos{
 			fa[j++]=0;fa[j++]=0;fa[j++]=1;fa[j++]=1;//rgba
 			fa[j++]=0;fa[j++]=0;//st
 		}
-		static axis inst;
-	};
-	axis axis::inst;
+	}axis;
 
 	class circlexy:public vbo{
 	public:
@@ -842,17 +838,13 @@ namespace vbos{
 				fa[j++]=c;fa[j++]=s;//st
 			}
 		}
-		static circlexy inst;
-	};
-	circlexy circlexy::inst;
+	}circlexy;
 
 	class squarexy:public vbo{
 	public:
 		inline const char*name()const{return "squarexy";}
 		inline int elemtype()const{return 7;}
-		static squarexy inst;
-	};
-	squarexy squarexy::inst;
+	}squarexy;
 
 	class spritexy:public vbo{
 	public:
@@ -878,10 +870,7 @@ namespace vbos{
 			fa[c++]= 0;fa[c++]=0;fa[c++]=0;fa[c++]=0;//rgba
 			fa[c++]= 1;fa[c++]=0;//st
 		}
-
-		static spritexy inst;
-	};
-	spritexy spritexy::inst;
+	}spritexy_;
 }
 	class glob:public pt{
 		const int id;
@@ -1046,7 +1035,7 @@ namespace vbos{
 			if(vb)
 				vb->gldraw();
 			if(drawaxis)
-				vbos::axis::inst.gldraw();
+				vbos::axis.gldraw();
 			if(drawboundingspheres){
 				const pt pos=posinwcs(pt());
 //				flf();l()<<pos<<"   "<<r<<endl;
@@ -1055,7 +1044,7 @@ namespace vbos{
 				mw.setsclagltrans(pt(r,r,r),pt(),pos);
 				mw.togl(mx);
 				glUniformMatrix4fv(shader.umxmw,1,false,mx);
-				vbos::circlexy::inst.gldraw();
+				vbos::circlexy.gldraw();
 			}
 			for(auto g:chs)g->gldraw();
 		};
@@ -1213,7 +1202,7 @@ namespace vbos{
 			mw.setsclagltrans(pt(s,s,s),pt(),po);
 			mw.togl(mx);
 			glUniformMatrix4fv(shader.umxmw,1,false,mx);
-			vbos::squarexy::inst.gldraw();
+			vbos::squarexy.gldraw();
 			//? sphere in viewpyr check
 	//		const GLbyte c=(GLbyte)(po.gety()/15*127);
 	//		glColor3b(0,0,c);
@@ -1811,7 +1800,7 @@ namespace vbos{
 		void fire(){
 			const float r=.01f;
 			const float s=.5f;
-			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),0),pt(),r,1,1,vbos::spritexy::inst);
+			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),0),pt(),r,1,1,vbos::spritexy_);
 			const float d=.05f;
 			g->dpos(pt(rnd(-d,d),rnd(-d,d),0),pt(0,0,rnd(-180,180)));
 
@@ -1943,12 +1932,11 @@ namespace vbos{
 		printf(": %8s : %-4lu :\n","glob",sizeof(glob));
 		printf(": %8s : %-4lu :\n","vbo",sizeof(vbo));
 //		printf(": %8s : %-4lu :\n","dbox",sizeof(dbox));
-
-		vbo::inst.glload();
-		vbos::axis::inst.glload();
-		vbos::circlexy::inst.glload();
-		vbos::squarexy::inst.glload();
-		vbos::spritexy::inst.glload();
+		vbo_.glload();
+		vbos::axis.glload();
+		vbos::circlexy.glload();
+		vbos::squarexy.glload();
+		vbos::spritexy_.glload();
 	}
 
 	void run(){
@@ -2003,7 +1991,7 @@ namespace app{
 		virtual inline const char*name()const{return "vboobj";}
 		virtual inline const char*objfilepath()const{return "untitled0.obj";}
 		inline int elemtype()const{return 5;}
-		void init(){
+		void init0(){
 			string line;
 			ifstream infile(objfilepath());
 			if(!infile.is_open())throw signl(1,objfilepath());
@@ -2045,22 +2033,16 @@ namespace app{
 				}
 			}
 		}
-	public:
-		static vboobj inst;
-	};
-	vboobj vboobj::inst;
+	}vboobj;
 
 	class vbomonkey:public vboobj{
 		inline const char*name()const{return "vbomonkey";}
 		inline const char*objfilepath()const{return "untitled0.obj";}
-	public:
-		static vbomonkey inst;
-	};
-	vbomonkey vbomonkey::inst;
+	}vbomonkey;
 
 	class objobj:public glob{
 	public:
-		objobj(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=1,vbo&vb=vboobj::inst):
+		objobj(glob&g=wd,const pt&p=pt(),const pt&a=pt(),const float r=1,const float density_gcm3=1,const float bounciness=1,vbo&vb=vboobj):
 			glob(g,p,a,r,density_gcm3,bounciness,vb)
 		{}
 	};
@@ -2079,9 +2061,7 @@ namespace app{
 	public:
 		inline const char*name()const{return "vbosprite";}
 		inline const char*teximgpath()const{return "sprite2.png";}
-		static vbosprite inst;
-	};
-	vbosprite vbosprite::inst;
+	}vbosprite;
 
 	void run(const int argc,const char**argv){
 //		while(argc--)puts(*argv++);
@@ -2098,12 +2078,12 @@ namespace app{
 			net.init();
 		}
 
-		vboobj::inst.glload();
-		vbosprite::inst.glload();
-		vbomonkey::inst.glload();
+		vboobj.glload();
+		vbosprite.glload();
+		vbomonkey.glload();
 
 		const float s=.1f;
-		glob*o=new glob(wd,pt(),pt(),s,1,0,vbomonkey::inst);
+		glob*o=new glob(wd,pt(),pt(),s,1,0,vbomonkey);
 		o->dpos(pt(),pt(0,0,1));
 //		o->bits|=1;
 
