@@ -155,9 +155,9 @@ namespace dbox{
 		}
 	}shader;
 	struct net{
-		const int nplayers=2;
+		int nplayers=1;
 		const int nkeys=32;
-		const int keyslen=nplayers*nkeys;
+//		int keyslen=nplayers*nkeys;
 		const char*host="127.0.0.1";
 		const char*port="8085";
 	//	const char*playername="noname";
@@ -167,7 +167,74 @@ namespace dbox{
 		int player=0;
 		int sockfd=0;
 		struct addrinfo*ai=0;
+		char*localkeysbuf;
+		void keydn(const int key,const int x=0,const int y=0){
+			const int i=keyix(key);
+			if(!i)return;
+			const int s=keys[player*nkeys+i];
+			if(s==1)return;
+			keys[player*nkeys+i]=1;
+			static int xx,yy;
+			xx=x;yy=y;
+//			cout<<"keydn("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
+	//		sts<<"keydn("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
+		}
+		void keyup(const int key,const int x=0,const int y=0){
+			const int i=keyix(key);
+			const int s=keys[player*nkeys+i];
+			if(s==0)return;
+			if(s==1)return;
+			if(s!=2)throw signl(2,"unknownstate");
+			keys[player*nkeys+i]=0;
+			static int xx,yy;
+			xx=x;yy=y;
+//			cout<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
+	//		sts<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
+		}
+		int keyix(const int key){//? char keys[]
+			switch(key){
+			case 'w':return 1;
+			case 'j':return 2;
+			case 's':return 3;
+			case 'l':return 4;
+			case 'a':return 5;
+			case 'd':return 6;
+			case 'i':return 7;
+			case 'k':return 8;
+			case 'm':return 9;
+			case ',':return 10;
+			case 'z':return 11;
+			case 'x':return 12;
+			case 'c':return 13;
+			case ' ':return 14;
+			case 'b':return 15;
+			case 9:return 16;
+			case 27:return 17;
+			case 't':return 18;
+			case 'g':return 19;
+			case 'y':return 20;
+			case 'h':return 21;
+			case '1':return 22;
+			case '2':return 23;
+			case '3':return 24;
+			case '4':return 25;
+			case '5':return 26;
+			case '6':return 27;
+			case '7':return 28;
+			case '8':return 29;
+			case '9':return 30;
+			case '0':return 31;
+			default:return 0;
+			}
+		}
+		void onkeyb(const int c,const bool pressed,const int x,const int y){
+			if(pressed)
+				keydn(c,x,y);
+			else
+				keyup(c,x,y);
+		}
 		void sendkeys(){
+			memcpy(keys+nkeys*player,localkeysbuf,(size_t)nkeys);
 			const ssize_t bytes_sent=send(sockfd,keys+nkeys*player,(size_t)nkeys,0);
 			//flf();l("sent keys for player ")<<player<<"  bytessent("<<bytes_sent<<endl;
 			if(bytes_sent==-1){flf();l(strerror(errno))<<endl;throw signl(1,"sendkeys");}
@@ -185,15 +252,17 @@ namespace dbox{
 
 		}
 		void reckeys(){
-			const ssize_t reclen=recv(sockfd,keys,(size_t)keyslen,0);
+			const ssize_t reclen=recv(sockfd,keys,(size_t)(nplayers*nkeys),0);
 			if(reclen==0){flf();l("closed")<<endl;exit(1);}
 			if(reclen==-1){flf();l(strerror(errno))<<endl;exit(2);}
-			if(reclen!=keyslen)throw signl(3,"uncompleterec");//?
+			if(reclen!=nplayers*nkeys)throw signl(3,"uncompleterec");//?
 	//		print();
 		}
 		void init0(){
-			keys=new char[keyslen];
-			memset(keys,0,(size_t)keyslen);
+			keys=new char[nplayers*nkeys];
+			memset(keys,0,(size_t)(nplayers*nkeys));
+			localkeysbuf=new char[nkeys];
+			memset(localkeysbuf,0,(size_t)nkeys);
 		}//? leak
 		void init(){
 			flf();l()<<"connect "<<host<<":"<<port<<endl;
@@ -208,43 +277,34 @@ namespace dbox{
 			if(connect(sockfd,ai->ai_addr,ai->ai_addrlen)){flf();l(strerror(errno))<<endl;throw signl();}
 			flf();l("connected")<<endl;
 			const char c[]="0123456789abcdef";
-			char playerid[33];
 			srand((unsigned int)time(NULL));
 			for(int i=0;i<nkeys;i++){
-				playerid[i]=c[(int)rand()%16];
+				localkeysbuf[i]=c[(int)rand()%16];
 			}
-			playerid[32]=0;
 			flf();cout<<"  keys:"<<sizeof keys<<"\n";
-			flf();cout<<"  player id: "<<playerid<<"\n";
-			memset(keys,0,(size_t)keyslen);
-			if(!sockio){
-				strncpy(keys+player*nkeys,playerid,(size_t)nkeys);
-			}else{//?
-				string s="get /gloxnet .\r\ncookie:i=";
-				s.append(playerid).append("\r\n\r\n");
-				const char*sc=s.c_str();
-				flf();l(sc)<<endl;
-				const size_t sclen=s.length();
-				flf();l()<<sclen<<endl;
-				const ssize_t bytes_sent=send(sockfd,sc,(size_t)sclen,0);
-				if(bytes_sent!=(signed)sclen){flf();l(strerror(errno))<<endl;throw signl(1,"sockio");}
-	//			const ssize_t bytes_sent2=send(sockfd,sc,(size_t)sclen,0);
-	//			if(bytes_sent2!=(signed)sclen){flf();l(strerror(errno))<<endl;throw signl(2,"sockio");}
-			}
+			flf();cout<<"  player id: "<<localkeysbuf<<"\n";
 			sendkeys();
-
 			flf();l("waiting for other players.")<<endl;
 			reckeys();
 			flf();l("all players connected.")<<endl;
+			player=-1;
 			for(int i=0;i<nplayers;i++){
-				if(!strcmp(playerid,keys+i*nkeys)){//? compare 32 bytes
-					player=i;
-					break;
+				bool found=true;
+				for(int j=0;j<nkeys;j++){
+					if(localkeysbuf[j]!=keys[i*nkeys+j]){
+						found=false;
+						break;
+					}
 				}
+				if(!found)continue;
+				player=i;
+				break;
 			}
+			if(player==-1)throw signl();
 			flf();l("u r player #")<<player<<endl;
 			print();
-			memset(keys,0,(size_t)keyslen);
+			memset(localkeysbuf,0,(size_t)(nkeys));
+			memset(keys,0,(size_t)(nplayers*nkeys));
 		}
 		//	void stop(){
 		//		if(sockfd&&close(sockfd)){flf();l(strerror(errno))<<endl;}
@@ -632,7 +692,7 @@ namespace dbox{
 			const int stridebytes=stride*sizeofnum;
 
 			const int nv=nvertices();
-			cout<<"  "<<nv<<" vertices, "<<stridebytes<<" B/vertex"<<endl;
+			cout<<"  "<<nv<<" vertices, "<<stridebytes<<" B/vertex, "<<(nv*stride*(int)sizeof(float))<<" B"<<endl;
 			float*vb=new float[nv*stride];
 			vertices(vb);
 			glGenVertexArrays(1,&glva);
@@ -1058,21 +1118,21 @@ namespace vbos{
 			float t1=0,t2=0;
 			if(!solvesecdegeq(a,b,c,t1,t2)){
 	//			const float d=p3(p1,p2).magn();
-	//			flf();cout<<"t1="<<t1<<" t2="<<t2<<" a="<<a<<" d="<<d<<" dr="<<r0<<endl;
-				return true;//? objects in collision but have no velocities
+				flf();cout<<"t1="<<t1<<" t2="<<t2<<" a="<<a<<" d="<<d<<" dr="<<r0<<endl;
+				return true;// object in collision
 			}
 			float t=min(t1,t2);
 			if(t<=-1)t=max(t1,t2);
 			if(t>=0)t=min(t1,t2);
 			if(t<=-1||t>=0){
-	//			flf();l("t1=")<<t1<<" t2="<<t2<<" t="<<t<<"  u1("<<u1<<")"<<endl;
-	//			return true;
+				flf();l("t1=")<<t1<<" t2="<<t2<<" t="<<t<<"  u1("<<u1<<")"<<endl;
+				return true;
 			}
-			np.set(p1).transl(u1,t);
+			np.set(p1).transl(u1,t);//move objects out of collision
 			pt np2(p2);
 			np2.transl(u2,t);
-			const pt nml(np,np2,true);
-			pt vu1(nml);
+			const pt nml(np,np2,true);//collision normal
+			pt vu1(nml);//velocity along normal
 			vu1.scale(u1.dot(nml));
 			pt vu2(nml);
 			vu2.scale(u2.dot(nml));
@@ -1080,12 +1140,13 @@ namespace vbos{
 			const float m2=o.m;
 			const float mm=1/(m1+m2);
 			pt v1(u1);
-			v1.transl(vu1,-1);
-			v1.transl(vu1,(m1-m2)*mm*bf);
+			v1.transl(vu1,-1);//removes the velocity along normal
+			v1.transl(vu1,(m1-m2)*mm*bf);//reflect
 			v1.transl(vu2,2*m2*mm*bf);
 	//		flf();l()<<"nml("<<nml<<") u1("<<u1<<") u2("<<u2<<") vu1("<<vu1<<") vu2("<<vu2<<") v1("<<v1<<") m1("<<m1<<") m2("<<m2<<")"<<endl;
-			nd.set(v1);
-			np.transl(nd,dt()*(1-t));
+			nd.set(v1);//new velocity
+			flf();l()<<t<<endl;
+			np.transl(nd,dt()*(-t));//calculate the rest of dt with new velocity
 			return true;
 		}
 
@@ -1397,7 +1458,7 @@ namespace vbos{
 		virtual void onkeyb(const int c=0,const bool pressed=false,const int x=0,const int y=0)=0;
 	};
 
-	class vehicle:public glob,public keyb{
+	class vehicle:public glob{
 		float fwdbckrate;
 		float straferate;
 		float turnrate;
@@ -1473,11 +1534,6 @@ namespace vbos{
 			if(hdlkeytg('c')){agl().transl(-7,0,0);}
 			if(hdlkeytg('z')){agl().setx(0);}
 		}
-		void onkeyb(const int c,const bool pressed,const int x,const int y){
-			if(pressed)
-				keydn(c,x,y);
-			else keyup(c,x,y);
-		}
 		void mouseclk(const int button,const int state,int x,const int y){
 			cout<<"mouseclk: "<<button<<" "<<state<<" "<<x<<" "<<y<<endl;
 			/*sts<<"mousclk("<<state<<","<<button<<",["<<x<<","<<y<<",0]");*/
@@ -1494,85 +1550,26 @@ namespace vbos{
 		inline float getitems()const{return items;}
 	protected:
 		bool hdlkeydn(const char key){
-			const int i=keyix(key);
+			const int i=net.keyix(key);
 			if(!i)return false;
 			const int s=net.keys[player*net.nkeys+i];
 			if(s==0)return false;
 			if(s==2)return true;
 			if(s!=1)throw signl(2,"unknownstate");
-			net.keys[player*net.nkeys+i]=2;
+			net.keys[player*net.nkeys+i]=2;//?
 			return true;
 		}
 		bool hdlkeytg(const char key){
-			const int i=keyix(key);
+			const int i=net.keyix(key);
 			if(!i)return false;
 			const int s=net.keys[player*net.nkeys+i];
 			if(s==0)return false;
 			if(s==2)return false;
 			if(s!=1)return false;
-			net.keys[player*net.nkeys+i]=2;
+			net.keys[player*net.nkeys+i]=2;//?
 			return true;
 		}
 	private:
-		void keydn(const int key,const int x=0,const int y=0){
-			const int i=keyix(key);
-			if(!i)return;
-			const int s=net.keys[player*net.nkeys+i];
-			if(s==1)return;
-			net.keys[player*net.nkeys+i]=1;
-			static int xx,yy;
-			xx=x;yy=y;
-//			cout<<"keydn("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
-	//		sts<<"keydn("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
-		}
-		void keyup(const int key,const int x=0,const int y=0){
-			const int i=keyix(key);
-			const int s=net.keys[player*net.nkeys+i];
-			if(s==0)return;
-			if(s==1)return;
-			if(s!=2)throw signl(2,"unknownstate");
-			net.keys[player*net.nkeys+i]=0;
-			static int xx,yy;
-			xx=x;yy=y;
-//			cout<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
-	//		sts<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
-		}
-		int keyix(const int key){//? char keys[]
-			switch(key){
-			case 'w':return 1;
-			case 'j':return 2;
-			case 's':return 3;
-			case 'l':return 4;
-			case 'a':return 5;
-			case 'd':return 6;
-			case 'i':return 7;
-			case 'k':return 8;
-			case 'm':return 9;
-			case ',':return 10;
-			case 'z':return 11;
-			case 'x':return 12;
-			case 'c':return 13;
-			case ' ':return 14;
-			case 'b':return 15;
-			case 9:return 16;
-			case 27:return 17;
-			case 't':return 18;
-			case 'g':return 19;
-			case 'y':return 20;
-			case 'h':return 21;
-			case '1':return 22;
-			case '2':return 23;
-			case '3':return 24;
-			case '4':return 25;
-			case '5':return 26;
-			case '6':return 27;
-			case '7':return 28;
-			case '8':return 29;
-			case '9':return 30;
-			case '0':return 31;
-			default:return 0;
-			}
-		}
 	};
 
 	class windo:public vehicle{
@@ -1820,7 +1817,7 @@ namespace vbos{
 		void fire(){
 			const float r=.01f;
 			const float s=.5f;
-			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),0),pt(),r,1,0,vbos::spritexy::inst);
+			glob*g=new glob(wd,pt(rnd(-s,s),rnd(-s,s),0),pt(),r,1,1,vbos::spritexy::inst);
 			const float d=.05f;
 			g->dpos(pt(rnd(-d,d),rnd(-d,d),0),pt(0,0,rnd(-180,180)));
 
@@ -1910,9 +1907,10 @@ namespace vbos{
 	static windo*wn;
 
 	void GLFWCALL onkeyb(const int key,const int pressed){
-//		cout<<"keyboard key "<<key<<"   "<<pressed<<endl;
-		if(wn)
-			wn->onkeyb(key,pressed,0,0);
+		cout<<"keyboard key "<<key<<"   "<<pressed<<endl;
+		net.onkeyb((const char)key,pressed,0,0);
+//		if(wn)
+//			wn->onkeyb(key,pressed,0,0);
 	}
 	void GLFWCALL onresize(const int width,const int height){
 //		cout<<"window resize "<<width<<" x "<<height<<endl;
@@ -1966,6 +1964,10 @@ namespace vbos{
 	//	cout<<"frame"<<" "<<"dt      "<<" "<<"dt     "<<" "<<"globs"<<" "<<"globsrend"<<"\n";
 		while(glfwGetWindowParam(GLFW_OPENED)){
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error");
+			if(net.nplayers>1){
+				net.sendkeys();
+				net.reckeys();//? netlag
+			}
 			frm++;
 			clk.tk++;
 			tmr t3;
@@ -1979,8 +1981,10 @@ namespace vbos{
 			if(wn)
 				glfwSwapBuffers();
 			const float swapbufsdt=t3.dt();
-			clk.dt=t.dt();//? clk.set(t.dt())
-			clk.fps=(int)(1/clk.dt);
+			if(net.nplayers<2){
+				clk.dt=t.dt();//? clk.set(t.dt())
+				clk.fps=(int)(1/clk.dt);
+			}
 			printf(": %5ld : %5d : %5d : %4d : %5d : %5d : %5d : %5d : %5d : %8f : %8f : %8f : %8f : %8f : %8f :\r",frm,metrics.globs,metrics.globsrend,clk.fps,metrics.ngrids,metrics.gridsculled,metrics.coldetsph,metrics.collisions,metrics.mmmul,
 					drawframedt,tickdt,swapbufsdt,clk.dt,metrics.dtgrdput,metrics.dtcoldetgrd);
 			metrics.globsrend=metrics.mmmul=metrics.gridsculled=metrics.coldetsph=metrics.collisions=0;
@@ -2083,17 +2087,19 @@ namespace app{
 	};
 	vbosprite vbosprite::inst;
 
-	void run(int argc,char**argv){
-		while(argc--)puts(*argv++);
+	void run(const int argc,const char**argv){
+//		while(argc--)puts(*argv++);
 
 		dbox::init();
+
 		net.init0();
 		if(argc>1){
-			dbox::net.host=argv[1];
+			net.nplayers=2;
+			net.host=argv[1];
 			if(argc>2){
-				dbox::net.port=argv[2];
+				net.port=argv[2];
 			}
-			dbox::net.init();
+			net.init();
 		}
 
 		vboobj::inst.glload();
@@ -2116,17 +2122,17 @@ namespace app{
 		dbox::run();
 	}
 
-	class windobot{
-	public:
-		windo*wn;
-		void tick(){
-	//		flf();
-			wn->onkeyb('j',true,0,0);
-	//		wn->keydn('w',0,0);
-	//		wn->onkeyb(' ',true,0,0);
-			wn->onkeyb('c',true,0,0);
-		}
-	};
+//	class windobot{
+//	public:
+//		windo*wn;
+//		void tick(){
+//	//		flf();
+//			wn->onkeyb('j',true,0,0);
+//	//		wn->keydn('w',0,0);
+//	//		wn->onkeyb(' ',true,0,0);
+//			wn->onkeyb('c',true,0,0);
+//		}
+//	};
 }
 //////////////////////////////////////////////////////////////////////////
-int main(int argc,char**argv){app::run(argc,argv);return 0;}
+int main(const int argc,const char**argv){app::run(argc,argv);return 0;}
