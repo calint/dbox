@@ -281,6 +281,7 @@ namespace dbox{
 			for(int i=0;i<nkeys;i++){
 				localkeysbuf[i]=c[(int)rand()%16];
 			}
+			srand(0);
 			flf();cout<<"  keys:"<<sizeof keys<<"\n";
 			flf();cout<<"  player id: "<<localkeysbuf<<"\n";
 			sendkeys();
@@ -305,6 +306,7 @@ namespace dbox{
 			print();
 			memset(localkeysbuf,0,(size_t)(nkeys));
 			memset(keys,0,(size_t)(nplayers*nkeys));
+
 		}
 		//	void stop(){
 		//		if(sockfd&&close(sockfd)){flf();l(strerror(errno))<<endl;}
