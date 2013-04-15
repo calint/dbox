@@ -18,13 +18,15 @@ using namespace std;
 namespace dbox{
 	#define flf()l("···",__FILE__,__LINE__,__FUNCTION__);
 	inline ostream&l(const char*s="",const char*file="",int lineno=0,const char*func=""){cerr<<file;if(lineno){cerr<<":"<<lineno;}cerr<<" "<<func<<"  "<<s;return cerr;}
-	struct clk{
+	class clk{
+	public:
 		int fps=120;
 		int dtms=1000/fps;
 		float dt=dtms/1000.f;
 		long tk=0;
 	}clk;
-	struct metrics{
+	class metrics{
+	public:
 		int globs;
 		int coldetsph;
 		int frames;
@@ -86,7 +88,8 @@ namespace dbox{
 		inline const char* str()const{return s;}
 	};
 
-	struct shader{
+	class shader{
+	public:
 		GLuint prog=0;
 		GLint umxmw=0;
 		GLint umxwv=0;
@@ -154,15 +157,16 @@ namespace dbox{
 			if(glGetError())throw signl(0,"shader::init");
 		}
 	}shader;
-	struct net{
-		int nplayers=1;
+	class net{
 //		int keyslen=nplayers*nkeys;
-		const char*host="127.0.0.1";
-		const char*port="8085";
 	//	const char*playername="noname";
 		bool sockio=false;
-		char*keys;//[nplayers][nkeys];
+	public:
+		const char*host="127.0.0.1";
+		const char*port="8085";
 		const int nkeys=32;
+		int nplayers=1;
+		char*keys;//[nplayers][nkeys];
 		int player=0;
 	protected:
 		int sockfd=0;
@@ -1965,8 +1969,6 @@ namespace vbos{
 				wn->drawframe();
 			const float drawframedt=t3.dt();
 			wd.dotck();
-			if(wn)
-				wn->handlekeys();
 			const float tickdt=t3.dt();
 			if(wn)
 				glfwSwapBuffers();
@@ -1974,7 +1976,11 @@ namespace vbos{
 			if(net.nplayers<2){
 				clk.dt=t.dt();//? clk.set(t.dt())
 				clk.fps=(int)(1/clk.dt);
+			}else{
+				net.reckeys();
 			}
+			if(wn)
+				wn->handlekeys();
 			printf(": %5ld : %5d : %5d : %4d : %5d : %5d : %5d : %5d : %5d : %8f : %8f : %8f : %8f : %8f : %8f :\r",frm,metrics.globs,metrics.globsrend,clk.fps,metrics.ngrids,metrics.gridsculled,metrics.coldetsph,metrics.collisions,metrics.mmmul,
 					drawframedt,tickdt,swapbufsdt,clk.dt,metrics.dtgrdput,metrics.dtcoldetgrd);
 			metrics.globsrend=metrics.mmmul=metrics.gridsculled=metrics.coldetsph=metrics.collisions=0;
