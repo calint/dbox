@@ -156,15 +156,15 @@ namespace dbox{
 	}shader;
 	struct net{
 		int nplayers=1;
-		const int nkeys=32;
 //		int keyslen=nplayers*nkeys;
 		const char*host="127.0.0.1";
 		const char*port="8085";
 	//	const char*playername="noname";
 		bool sockio=false;
-
 		char*keys;//[nplayers][nkeys];
+		const int nkeys=32;
 		int player=0;
+	protected:
 		int sockfd=0;
 		struct addrinfo*ai=0;
 		char*localkeysbuf;
@@ -191,6 +191,7 @@ namespace dbox{
 //			cout<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
 	//		sts<<"keyup("<<(int)key<<",["<<x<<","<<y<<"],"<<key<<")";
 		}
+	public:
 		int keyix(const int key){//? char keys[]
 			switch(key){
 			case 'w':return 1;
@@ -234,22 +235,10 @@ namespace dbox{
 				keyup(c,x,y);
 		}
 		void sendkeys(){
-			memcpy(keys+nkeys*player,localkeysbuf,(size_t)nkeys);
-			const ssize_t bytes_sent=send(sockfd,keys+nkeys*player,(size_t)nkeys,0);
+//			memcpy(keys+nkeys*player,localkeysbuf,(size_t)nkeys);
+			const ssize_t bytes_sent=send(sockfd,localkeysbuf,(size_t)nkeys,0);
 			//flf();l("sent keys for player ")<<player<<"  bytessent("<<bytes_sent<<endl;
 			if(bytes_sent==-1){flf();l(strerror(errno))<<endl;throw signl(1,"sendkeys");}
-		}
-		void print(){
-//			cout<<hex;
-//			for(int i=0;i<nplayers;i++){
-//				cout<<"k["<<i<<"](";
-//				for(int j=0;j<nkeys;j++){
-//					if(j>0)cout<<" ";
-//					cout<<int(keys[i][j]);
-//				}
-//				cout<<")"<<endl;
-//			}
-
 		}
 		void reckeys(){
 			const ssize_t reclen=recv(sockfd,keys,(size_t)(nplayers*nkeys),0);
@@ -303,7 +292,6 @@ namespace dbox{
 			}
 			if(player==-1)throw signl();
 			flf();l("u r player #")<<player<<endl;
-			print();
 			memset(localkeysbuf,0,(size_t)(nkeys));
 			memset(keys,0,(size_t)(nplayers*nkeys));
 
