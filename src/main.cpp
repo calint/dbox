@@ -615,28 +615,22 @@ namespace dbox{
 	};
 
 	class bvol{
-		const int count;
-		const plane*pns;
+		list<plane*>pnls;
 	public:
-		bvol&operator=(bvol rhs){
-			const size_t n=sizeof(int)+sizeof(plane)*(size_t)rhs.count;//? bug
-			memcpy(this,&rhs,n);
-			return *this;
+		~bvol(){
+			for(auto pn:pnls)
+				delete pn;
+//			pnls.clear();
 		}
-		bvol():count(0),pns(0){}
-		bvol(const bvol&b):count(b.count),pns(b.pns){}
-		bvol(const int count,const plane p[]):
-			count(count),
-			pns(p)
-		{}
+		void addplane(/*own*/plane*pn){
+			pnls.push_back(pn);
+		}
 		int cull(const pt&p,const float r)const{
-			for(int i=0;i<count;i++){
-				const plane&pp=pns[i];
-				//const p3 v(pp,*this);
-				//const float t=v.dot(pp.n);
-				const float t=pp.dist(p);
+			for(auto pn:pnls){
+				const plane&pp=*pn;
+				const float t=pp.dist(p);//? dist2
 				if(t>0){// infront
-					if(t>r){
+					if(t>r){// infronter than radius, culled
 						return 1;
 					}
 				}
@@ -655,7 +649,7 @@ namespace dbox{
 		bvol bv;
 	public:
 		virtual void init0(){}
-		vbo():glva(0),glvib(0),glvb(0),nind(0),bv(0,0){}
+		vbo():glva(0),glvib(0),glvb(0),nind(0){}
 		virtual~vbo(){}
 		virtual inline const char*name()const{return "vbo";}
 		virtual inline int nvertices()const{return 4;}
@@ -688,7 +682,7 @@ namespace dbox{
 		}
 //		virtual inline const char*teximgpath()const{return "sprite0.png";}
 		virtual inline const char*teximgpath()const{return 0;}
-		virtual inline const bvol getbvol(){return bvol(0,0);}
+		virtual inline const bvol getbvol(){return bvol();}
 		void glload(){
 			cout<<name()<<endl;
 			bv=getbvol();
@@ -1615,7 +1609,10 @@ namespace vbos{
 			mwv.togl(mx);
 			glUniformMatrix4fv(shader.umxwv,1,false,mx);
 			glUniform1i(shader.udopersp,dopersp);
-			const bvol bv(0,0);
+			bvol bv;
+//			bv.addplane(new plane(pt(),pt(1,0,0)));
+//			bv.addplane(new plane(pt(),pt(0,1,0)));
+//			bv.addplane(new plane(pt(),pt(0,0,1)));
 //			wd.culldraw(bv);
 			wd.grd.culldraw(bv);
 			if(wd.drawgrid)
