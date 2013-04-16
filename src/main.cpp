@@ -253,12 +253,13 @@ namespace dbox{
 	//		print();
 		}
 		void init0(){
-			keys=new char[nplayers*nkeys];
-			memset(keys,0,(size_t)(nplayers*nkeys));
 			localkeysbuf=new char[nkeys];
 			memset(localkeysbuf,0,(size_t)nkeys);
+			keys=new char[nplayers*nkeys];
+			memset(keys,0,(size_t)(nplayers*nkeys));
 		}//? leak
 		void init(){
+			init0();
 			flf();l()<<"connect "<<host<<":"<<port<<endl;
 			struct addrinfo hints;
 			memset(&hints,0,sizeof hints);
@@ -1020,7 +1021,7 @@ namespace vbos{
 				ppsaved=false;//?
 			}
 	//		flf();l()<<"f("<<f<<") fi("<<fi<<") m("<<m<<") dd("<<dd<<") d("<<d<<") ("<<*this<<") dt("<<dt()<<") "<<endl;
-			dd=pt(f).transl(fi).scale(1/m);
+			dd=pt(f).transl(fi).scale(1/m);//? dda
 			fi.clr();
 			d.transl(dd,dt());
 			transl(d,dt());
@@ -2070,8 +2071,6 @@ namespace app{
 //		while(argc--)puts(*argv++);
 
 		dbox::init();
-
-		net.init0();
 		if(argc>1){
 			net.nplayers=2;
 			net.host=argv[1];
@@ -2079,7 +2078,8 @@ namespace app{
 				net.port=argv[2];
 			}
 			net.init();
-		}
+		}else
+			net.init0();
 
 		vboobj.glload();
 		vbosprite.glload();
