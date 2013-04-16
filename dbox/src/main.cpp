@@ -325,7 +325,7 @@ namespace dbox{
 		inline pt&transl(const pt&d){x+=d.x;y+=d.y;z+=d.z;return*this;}
 		inline pt&transl(const pt&d,const float dt){x+=d.x*dt;y+=d.y*dt;z+=d.z*dt;return*this;}
 		inline float magn()const{return sqrt(x*x+y*y+z*z);}
-		inline float magn2()const{return x*x+y*y+z*z;}
+		inline float magn2()const{return x*x+y*y+z*z;}//? dot(*this);
 		inline pt&set(const pt&p){x=p.x;y=p.y;z=p.z;return*this;}
 		inline pt&set(const float x,const float y,const float z){this->x=x;this->y=y;this->z=z;return*this;}
 		inline pt&neg(){x=-x;y=-y;z=-z;return*this;}
@@ -951,8 +951,8 @@ namespace vbos{
 			const pt v(wpthis,wpo);
 			const float rr=radius()+o.radius();
 			const float rr2=rr*rr;
-			const float d=v.magn();//? magn2
-			const float d2=d*d;
+//			const float d=v.magn();//? magn2
+			const float d2=v.magn2();
 			if(d2>=rr2){
 				if(o.iscoldetrec()){
 					for(auto gg:o.chs)
