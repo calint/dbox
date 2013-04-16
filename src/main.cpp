@@ -14,6 +14,7 @@
 #define GLFW_NO_GLU
 #include "../glfw/glfw.h"
 #include <png.h>
+//#include <thread>
 using namespace std;
 namespace dbox{
 	#define flf()l("···",__FILE__,__LINE__,__FUNCTION__);
@@ -949,8 +950,10 @@ namespace vbos{
 			const pt wpo=o.g.posinwcs(o);
 			const pt v(wpthis,wpo);
 			const float rr=radius()+o.radius();
+			const float rr2=rr*rr;
 			const float d=v.magn();//? magn2
-			if(d>=rr){
+			const float d2=d*d;
+			if(d2>=rr2){
 				if(o.iscoldetrec()){
 					for(auto gg:o.chs)
 						coldet(*gg);
