@@ -532,42 +532,6 @@ namespace dbox{
 		is>>p;m.xo=p.getx();m.yo=p.gety();m.zo=p.getz();is.ignore();is>>m.oo;is.ignore();
 		return is;
 	}
-	class plane:public pt{
-		const pt n;
-	public:
-		plane(const pt&p,const pt&n):
-			pt(p),
-			n(n)
-		{}
-		float dist(const pt&p)const{
-			const pt v(*this,p);
-			return n.dot(v);
-		}
-	};
-
-	class bvol{
-		const int count;
-		const plane*pns;
-	public:
-		bvol(const int count,const plane p[]):
-			count(count),
-			pns(p)
-		{}
-		int cull(const pt&p,const float r)const{
-			for(int i=0;i<count;i++){
-				const plane&pp=pns[i];
-				//const p3 v(pp,*this);
-				//const float t=v.dot(pp.n);
-				const float t=pp.dist(p);
-				if(t>0){// infront
-					if(t>r){
-						return 1;
-					}
-				}
-			}
-			return 0;
-		}
-	};
 
 	//#include<png.h>
 	void loadfilepng(const char*path,unsigned int&wi,unsigned int&hi,unsigned char*&rgba){
@@ -637,6 +601,50 @@ namespace dbox{
 		}
 	};
 
+	class plane:public pt{
+		const pt n;
+	public:
+		plane(const pt&p,const pt&n):
+			pt(p),
+			n(n)
+		{}
+		float dist(const pt&p)const{
+			const pt v(*this,p);
+			return n.dot(v);
+		}
+	};
+
+	class bvol{
+		const int count;
+		const plane*pns;
+	public:
+		bvol&operator=(bvol rhs){
+			const size_t n=sizeof(int)+sizeof(plane)*(size_t)rhs.count;
+			memcpy(this,&rhs,n);
+			return *this;
+		}
+		bvol():count(0),pns(0){}
+		bvol(const bvol&b):count(b.count),pns(b.pns){}
+		bvol(const int count,const plane p[]):
+			count(count),
+			pns(p)
+		{}
+		int cull(const pt&p,const float r)const{
+			for(int i=0;i<count;i++){
+				const plane&pp=pns[i];
+				//const p3 v(pp,*this);
+				//const float t=v.dot(pp.n);
+				const float t=pp.dist(p);
+				if(t>0){// infront
+					if(t>r){
+						return 1;
+					}
+				}
+			}
+			return 0;
+		}
+	};
+
 	//#include <list>
 	class vbo{
 		GLuint glva;//vertex array
@@ -644,9 +652,10 @@ namespace dbox{
 		GLuint glvb;
 		GLsizei nind;
 		texture txp;
+		bvol bv;
 	public:
 		virtual void init0(){}
-		vbo():glva(0),glvib(0),glvb(0),nind(0){}
+		vbo():glva(0),glvib(0),glvb(0),nind(0),bv(0,0){}
 		virtual~vbo(){}
 		virtual inline const char*name()const{return "vbo";}
 		virtual inline int nvertices()const{return 4;}
@@ -679,8 +688,10 @@ namespace dbox{
 		}
 //		virtual inline const char*teximgpath()const{return "sprite0.png";}
 		virtual inline const char*teximgpath()const{return 0;}
+		virtual inline const bvol getbvol(){return bvol(0,0);}
 		void glload(){
 			cout<<name()<<endl;
+			bv=getbvol();
 			init0();
 			if(glGetError()!=GL_NO_ERROR)throw signl(0,"opengl in error state");
 			const int stride=9;//xyz,rgba,st
@@ -874,6 +885,7 @@ namespace vbos{
 		}
 	}spritexy_;
 }
+
 	class glob:public pt{
 		const int id;
 		glob&g;
