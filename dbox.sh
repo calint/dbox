@@ -11,6 +11,7 @@ cmd="$cmd0 -o $bin src/*.cpp \
 	-O3 \
  	-I/usr/X11/include/ -L/usr/X11/lib/ -lpng \
  	-std=c++11 \
+ 	-stdlib=libc++ \
 	-Wfatal-errors"&&
 echo $cmd&&
 clang -v&&
@@ -24,4 +25,3 @@ cat src/*.cpp|gzip|wc&&
 
 
 #	-std=gnu++11 \
-# 	-stdlib=libc++ \
