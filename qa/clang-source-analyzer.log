@@ -1,0 +1,6 @@
+../src/main.cpp:586:7: warning: Memory is never released; potential leak of memory pointed to by 'rgba'
+                    delete rgba;
+                    ^
+1 warning generated.
+scan-build: 1 bugs found.
+scan-build: Run 'scan-view /var/folders/_k/9fp150gn26d84_lr0jddt_440000gn/T/scan-build-2013-04-16-1' to examine bug reports.

@@ -161,7 +161,7 @@ namespace dbox{
 	class net{
 //		int keyslen=nplayers*nkeys;
 	//	const char*playername="noname";
-		bool sockio=false;
+//		bool sockio=false;
 	public:
 		const char*host="127.0.0.1";
 		const char*port="8085";
@@ -1566,12 +1566,10 @@ namespace vbos{
 	};
 
 	class windo:public vehicle{
-		bool dodrawhud,gamemode,fullscr,consolemode,viewpointlht,drawshadows,coki3d;
+		bool dodrawhud,gamemode,fullscr,viewpointlht,drawshadows;
 		float zoom;
-		int wi,hi,wiprv,hiprv;
-		GLuint gltexshadowmap;
-		GLsizei shadowmapsize;
-		float firereload;
+		int wi,hi;
+//		float firereload;
 		tmr drawtmr;
 		bool dopersp;
 	public:
@@ -1580,18 +1578,12 @@ namespace vbos{
 			dodrawhud(false),
 			gamemode(false),
 			fullscr(false),
-			consolemode(false),
 			viewpointlht(false),
 			drawshadows(true),
-			coki3d(false),
 			zoom(zoom),
 			wi(width),
 			hi(height),
-			wiprv(wi),
-			hiprv(hi),
-			gltexshadowmap(0),
-			shadowmapsize(512),
-			firereload(0),
+//			firereload(0),
 			dopersp(true)
 		{}
 		void resize(const int width,const int height){
@@ -1869,7 +1861,7 @@ namespace vbos{
 
 			oss.str("");
 	//		oss<<setprecision(4);
-			oss<<"upd("<<metrics.dtupd<<")s rayone("<<metrics.rayone<<")s draw("<<metrics.dtrend<<")s    "<<((int)(metrics.globs/(metrics.dtrend?metrics.dtrend:1))>>10)<<"Kglobs/s    rendfpsest("<<(1/(metrics.dtrend+metrics.dtupd+metrics.dtcoldetgrd))<<")f/s";
+//			oss<<"upd("<<metrics.dtupd<<")s rayone("<<metrics.rayone<<")s draw("<<metrics.dtrend<<")s    "<<((int)(metrics.globs/(metrics.dtrend?metrics.dtrend:1))>>10)<<"Kglobs/s    rendfpsest("<<(1/(metrics.dtrend+metrics.dtupd+metrics.dtcoldetgrd))<<")f/s";
 	//		y+=dy;pl(oss.str().c_str(),y,0,1,.1f);
 
 			oss.str("");
