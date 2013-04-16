@@ -12,9 +12,9 @@
 #include<netdb.h>//net
 #define GLFW_INCLUDE_GL3
 #define GLFW_NO_GLU
-#include "../glfw/glfw.h"
-#include <png.h>
-//#include <thread>
+#include"../glfw/glfw.h"
+#include<png.h>
+#include<thread>
 using namespace std;
 namespace dbox{
 	#define flf()l("···",__FILE__,__LINE__,__FUNCTION__);
@@ -1943,8 +1943,10 @@ namespace vbos{
 		vbos::squarexy.glload();
 		vbos::spritexy_.glload();
 	}
-
+	void hello(){cout<<"Hello from thread "<<endl;}
 	void run(){
+//		std::thread thd(hello);
+//		thd.join();
 		long frm=0;
 		tmr t,t1,t2;
 		printf(": %5s : %5s : %5s : %4s : %5s : %5s : %5s : %5s : %5s : %8s : %8s : %8s : %8s : %8s : %8s :\n","frame","globs","rend","fps","grids","cull","chk","cols","mxmul","dtdrw","dttck","dtswp","dt","dtgrdpt","dtcoldet");
