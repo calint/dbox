@@ -619,7 +619,7 @@ namespace dbox{
 		const plane*pns;
 	public:
 		bvol&operator=(bvol rhs){
-			const size_t n=sizeof(int)+sizeof(plane)*(size_t)rhs.count;
+			const size_t n=sizeof(int)+sizeof(plane)*(size_t)rhs.count;//? bug
 			memcpy(this,&rhs,n);
 			return *this;
 		}
