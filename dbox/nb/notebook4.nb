@@ -1,0 +1,179 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 9.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[      5442,        169]
+NotebookOptionsPosition[      4634,        136]
+NotebookOutlinePosition[      4988,        152]
+CellTagsIndexPosition[      4945,        149]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{"J", "=", 
+  RowBox[{"F", " ", "\[CapitalDelta]t"}]}]], "Input",
+ CellChangeTimes->{{3.575329819545197*^9, 3.575329835858193*^9}}],
+
+Cell[BoxData[
+ RowBox[{"F", " ", "\[CapitalDelta]t"}]], "Output",
+ CellChangeTimes->{{3.575329836381349*^9, 3.575329862243341*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  OverscriptBox["F", "\[RightVector]"], "=", 
+  RowBox[{"m", 
+   OverscriptBox["a", "\[RightVector]"]}]}]], "Input",
+ CellChangeTimes->{{3.575329870064777*^9, 3.5753298817634583`*^9}, 
+   3.575330003391921*^9}],
+
+Cell[BoxData[
+ RowBox[{"m", " ", 
+  OverscriptBox["a", "\[RightVector]"]}]], "Output",
+ CellChangeTimes->{{3.575329874190002*^9, 3.575329896171834*^9}, 
+   3.57533000404872*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"J", "=", 
+  RowBox[{
+   RowBox[{"F", " ", "\[CapitalDelta]t"}], "=", 
+   RowBox[{
+    RowBox[{"m", 
+     OverscriptBox["a", "\[RightVector]"], "\[CapitalDelta]t"}], "=", 
+    RowBox[{
+     RowBox[{"m", 
+      FractionBox["\[CapitalDelta]v", "\[CapitalDelta]t"], 
+      "\[CapitalDelta]t"}], "=", "m\[CapitalDelta]v"}]}]}]}]], "Input",
+ CellChangeTimes->{{3.575329907157989*^9, 3.575330011952775*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  StyleBox[
+   RowBox[{"Set", "::", "write"}], "MessageName"], 
+  RowBox[{
+  ":", " "}], "\<\"Tag \[NoBreak]\\!\\(Times\\)\[NoBreak] in \[NoBreak]\\!\\(\
+\\(m\\\\ \[CapitalDelta]t\\\\ \[CapitalDelta]v\\)\\/\[CapitalDelta]t\\)\
+\[NoBreak] is Protected. \\!\\(\\*ButtonBox[\\\"\[RightSkeleton]\\\", \
+ButtonStyle->\\\"Link\\\", ButtonFrame->None, \
+ButtonData:>\\\"paclet:ref/message/General/write\\\", ButtonNote -> \
+\\\"Set::write\\\"]\\)\"\>"}]], "Message", "MSG",
+ CellChangeTimes->{{3.575329924358986*^9, 3.575329932191141*^9}, {
+  3.575329986154261*^9, 3.575330012972067*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  StyleBox[
+   RowBox[{"Set", "::", "write"}], "MessageName"], 
+  RowBox[{
+  ":", " "}], "\<\"Tag \[NoBreak]\\!\\(Times\\)\[NoBreak] in \
+\[NoBreak]\\!\\(m\\\\ \[CapitalDelta]t\\\\ \\(a\\&\[RightVector]\\)\\)\
+\[NoBreak] is Protected. \\!\\(\\*ButtonBox[\\\"\[RightSkeleton]\\\", \
+ButtonStyle->\\\"Link\\\", ButtonFrame->None, \
+ButtonData:>\\\"paclet:ref/message/General/write\\\", ButtonNote -> \
+\\\"Set::write\\\"]\\)\"\>"}]], "Message", "MSG",
+ CellChangeTimes->{{3.575329924358986*^9, 3.575329932191141*^9}, {
+  3.575329986154261*^9, 3.575330013075408*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  StyleBox[
+   RowBox[{"Set", "::", "write"}], "MessageName"], 
+  RowBox[{
+  ":", " "}], "\<\"Tag \[NoBreak]\\!\\(Times\\)\[NoBreak] in \[NoBreak]\\!\\(\
+\\(\\((a\\\\ m)\\)\\)\\\\ \[CapitalDelta]t\\)\[NoBreak] is Protected. \
+\\!\\(\\*ButtonBox[\\\"\[RightSkeleton]\\\", ButtonStyle->\\\"Link\\\", \
+ButtonFrame->None, ButtonData:>\\\"paclet:ref/message/General/write\\\", \
+ButtonNote -> \\\"Set::write\\\"]\\)\"\>"}]], "Message", "MSG",
+ CellChangeTimes->{{3.575329924358986*^9, 3.575329932191141*^9}, {
+  3.575329986154261*^9, 3.57533001317138*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  StyleBox[
+   RowBox[{"General", "::", "stop"}], "MessageName"], 
+  RowBox[{
+  ":", " "}], "\<\"Further output of \[NoBreak]\\!\\(\\*StyleBox[\\(Set :: \
+write\\), \\\"MessageName\\\"]\\)\[NoBreak] will be suppressed during this \
+calculation. \\!\\(\\*ButtonBox[\\\"\[RightSkeleton]\\\", \
+ButtonStyle->\\\"Link\\\", ButtonFrame->None, \
+ButtonData:>\\\"paclet:ref/message/General/stop\\\", ButtonNote -> \
+\\\"General::stop\\\"]\\)\"\>"}]], "Message", "MSG",
+ CellChangeTimes->{{3.575329924358986*^9, 3.575329932191141*^9}, {
+  3.575329986154261*^9, 3.575330013235826*^9}}],
+
+Cell[BoxData["m\[CapitalDelta]v"], "Output",
+ CellChangeTimes->{{3.575329924360744*^9, 3.575329932195279*^9}, {
+  3.575329986411416*^9, 3.575330013269024*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"\[CapitalDelta]v", "=", 
+  FractionBox["J", "m"]}]], "Input",
+ CellChangeTimes->{{3.575330065337152*^9, 3.575330073827326*^9}}],
+
+Cell[BoxData[
+ FractionBox["m\[CapitalDelta]v", "m"]], "Output",
+ CellChangeTimes->{3.575330078109458*^9}]
+}, Open  ]]
+},
+WindowSize->{740, 620},
+WindowMargins->{{4, Automatic}, {Automatic, 4}},
+FrontEndVersion->"9.0 for Mac OS X x86 (32-bit, 64-bit Kernel) (January 25, \
+2013)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[579, 22, 153, 3, 28, "Input"],
+Cell[735, 27, 131, 2, 28, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[903, 34, 234, 6, 34, "Input"],
+Cell[1140, 42, 177, 4, 31, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[1354, 51, 424, 11, 47, "Input"],
+Cell[1781, 64, 605, 12, 39, "Message"],
+Cell[2389, 78, 588, 12, 24, "Message"],
+Cell[2980, 92, 576, 11, 24, "Message"],
+Cell[3559, 105, 600, 12, 24, "Message"],
+Cell[4162, 119, 159, 2, 28, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4358, 126, 151, 3, 47, "Input"],
+Cell[4512, 131, 106, 2, 80, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+
